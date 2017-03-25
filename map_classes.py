@@ -15,6 +15,17 @@ class Tile:
         #by default, if a tile is blocked, it also blocks sight
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight
+        #careful - the list of adjacent tiles can only be generated after all tiles have been created.
+        self.adjacent_tiles = []
+        #insane idea - why not define a static dijkstra map for every unblocked tile?
+
+    def compute_adjacent_tiles(self):
+        neighbors = []
+        for y in range(defn.MAP_HEIGHT):
+            for x in range(defn.MAP_WIDTH):
+                if abs(x-self.x) <= 1 and abs(y-self.y) <=1:
+                    neighbors.append(defn.dungeon[x][y])
+        self.adjacent_tiles = neighbors
 
 class Rect:
     #defines a rectangle

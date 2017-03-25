@@ -8,6 +8,8 @@ import foo_dictionary as fdic
 import attack_dictionary as adic
 import game
 import equipment_dictionary as edic
+import data_methods as data
+import dijkstra as djks
 
 class Object:
     #this is a generic object: the player, a monster, an item, the stairs...
@@ -55,7 +57,6 @@ class Object:
 
     def describe(self):
         #render the screen. this erases the inventory and shows the names of objects under the mouse.
-        libtcod.console_flush()
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
         game.render_all()
         gui.msgbox(self.description)
@@ -109,7 +110,7 @@ class Object:
         return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
 class Creature:
-    def __init__(self, hp, mana, channeling, armor, xp, attacks, death_function=None):
+    def __init__(self, hp, mana, channeling, armor, xp, attacks, defenses = [], death_function=None):
         self.death_function = death_function
         self.base_max_mana = mana
         self.mana = mana
@@ -117,10 +118,33 @@ class Creature:
         self.hp = hp
         self.base_armor = armor
         self.xp = xp
-        self.attacks = attacks
+        self.base_attacks = attacks
         self.channeling = channeling
+        self.base_defenses = defenses
         #initialize a turn counter. When counter reaches 0, action may be taken. Thus, different lengths of actions may be taken.
         self.turn_counter = 0
+
+    @property
+    def defenses(self):
+        bonus_defenses = []
+        bonus_sources = edic.get_all_equipped(self.owner) #+enchantments + conditions, etc.
+        if bonus_sources:
+            for obj in bonus_sources:
+                bonus_defenses += [obj.defense]
+        defenses = self.base_defenses + bonus_defenses
+        if defenses:
+            return defenses
+        return None
+
+    @property
+    def attacks(self):
+        bonus_attacks = []
+        bonus_sources = edic.get_all_equipped(self.owner) #+enchantments + conditions, etc.
+        if bonus_sources:
+            for obj in bonus_sources:
+                bonus_attacks += obj.attacks
+        attacks = self.base_attacks + bonus_attacks
+        return attacks
 
     @property
     def active_attack(self):
@@ -134,41 +158,23 @@ class Creature:
     @property
     def attack_bonus(self):
         #compute bonus to attack
-        melee_bonus = 0
-        range_bonus = 0
-        if self.owner.traits:
-            for trait in self.owner.traits:
-                if trait[0] == 'melee +':
-                    melee_bonus += trait[1]
-                if trait[0] == 'range +':
-                    range_bonus += trait[1]
+        melee_bonus = data.sum_values_from_list(self.owner.traits,'melee +')
+        range_bonus = data.sum_values_from_list(self.owner.traits,'range +')
         return [melee_bonus, range_bonus]
 
     @property
     def armor(self):  #return actual armor, by summing up the bonuses from all equipped items
-        armor_bonus = 0
-        if self.owner.traits:
-            for trait in self.owner.traits:
-                if trait[0] == 'armor +':
-                    armor_bonus += trait[1]
+        armor_bonus = data.sum_values_from_list(self.owner.traits,'armor +')
         return self.base_armor + armor_bonus
 
     @property
     def max_hp(self):  #return actual max_hp, by summing up the bonuses from all equipped items
-        life_bonus = 0
-        if self.owner.traits:
-            for trait in self.owner.traits:
-                if trait[0] == 'life +':
-                    life_bonus += trait[1]
+        life_bonus = data.sum_values_from_list(self.owner.traits,'life +')
         return self.base_max_hp + life_bonus
  
     @property
     def max_mana(self):  #return actual max_hp, by summing up the bonuses from all equipped items
-        mana_bonus = 0
-        if self.owner.traits:
-            for trait in self.owner.traits:
-                if trait[0] == 'mana capacity +':
-                    mana_bonus += trait[1]
+        mana_bonus = data.sum_values_from_list(self.owner.traits,'mana +')
         return self.base_max_mana + mana_bonus
 
     def adjust_turn_counter(self, turns):
@@ -186,90 +192,38 @@ class Creature:
                 if self.owner != defn.player:  #yield experience to the player
                     defn.player.creature.xp += self.xp
 
-    def attack(self, target):
-        arg = adic.attk_dict[self.active_attack]
+    def attack(self, target, attack, is_counterstrike=None):
+        arg = adic.attk_dict[attack]
         if 'melee' in arg['range'][0]:
             dice_bonus = self.attack_bonus[0]
-        if 'ranged' in ['range'][0]:
+        if 'ranged' in arg['range'][0]:
             dice_bonus = self.attack_bonus[1]
         attack = adic.get_attack(arg['name'])
+        attack.is_counterstrike = is_counterstrike
         attack.dice_bonus = dice_bonus
-        attack.target_creature(self.owner, target)
+        attack.declare_attack(self.owner, target)
 
     def heal(self, amount):
         #heal by the given amount, without going over the maximum
+        #note: need to do periodic check, in case player loses life without taking damage
         self.hp += amount
         if self.hp > self.max_hp:
             self.hp = self.max_hp
 
     def spend_mana(self, cost):
-        #apply damage if possible
+        #spend mana if possible.
         if self.mana - cost >= 0:
             self.mana -= cost
         else:
             return 'cancelled'
 
-class BasicMonster:
-    #Generic Monster AI
-    def take_turn(self):
-        #a basic monster takes its turn. If you can see it, it can see you
-        monster = self.owner
-        if libtcod.map_is_in_fov(defn.fov_map, monster.x, monster.y):
- 
-            #move towards player if far away; slow creatures move every other turn, randomly (will change)
-            if monster.distance_to(defn.player) >= 2:
-                destination = find_best_move(monster.x,monster.y)
-                monster.move_towards(destination.x, destination.y)
-                monster.creature.adjust_turn_counter(3)
-                if monster.traits:
-                    if ['fast'] in monster.traits:
-                        monster.creature.adjust_turn_counter(-1)
-                    if ['slow'] in monster.traits:
-                        monster.creature.adjust_turn_counter(1)
-                        
-            #close enough, attack! (if the player is still alive.)
-            elif defn.player.creature.hp > 0:
-                monster.creature.attack(defn.player)
-                monster.creature.adjust_turn_counter(2)
-
-def find_best_move(x,y):
-    #Scans surrounding tiles, weights them, and returns the best one. Currently just evaluates distance between tile and player. x and y are the current location from which the best move is being computed.
-    #later I can alter it to give different values based on environment, using an AI dictionary
-    choices = get_adjacent_tiles(x,y)
-    best_choice = None
-    best_value = None
-    for tile in choices:
-        value = 0
-        #if you see the player, follow them
-        if libtcod.map_is_in_fov(defn.fov_map, x, y):
-            value -= 2 * math.sqrt((tile.x-defn.player.x) ** 2 + (tile.y-defn.player.y) ** 2)
-        #if not,
-        else:
-        #follow player's scent
-            value += tile.scent
-        #random wandering
-            #value += libtcod.random_get_int(0,0,1)
-        
-        if (value > best_value) or (best_choice == None):
-            best_value = value
-            best_choice = tile
-    return best_choice
-
-def distance (x1,y1,x2,y2):
-    return math.sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
-
 def get_adjacent_tiles(x,y):
     #returns a list of non-blocked adjacent tiles, including current tile.
     adjacent_tiles = []
-
-    #not sure why numbering is so weird here You have to shift X left to eliminate the skew, and then shift the whole thing right.
-    for y in [y-1, y, y+1]:
-        for x in [x-2, x-1, x]:
-            try:
-                if not defn.dungeon[x+1][y].blocked:
-                    adjacent_tiles.append(defn.dungeon[x+1][y])
-            except:
-                pass
+    for j in range(defn.MAP_HEIGHT):
+        for i in range(defn.MAP_WIDTH):
+            if abs(x-i) <= 1 and abs(y-j) <=1 and not defn.dungeon[i][j].blocked:
+                adjacent_tiles.append(defn.dungeon[i][j])
 
     return adjacent_tiles
     
@@ -333,11 +287,12 @@ class Item:
 
 class Equipment:
     #an object that can be equipped, yielding bonuses. automatically adds the Item component.
-    def __init__(self, slot, trait_bonus=[], attacks=[]):
+    def __init__(self, slot, trait_bonus=[], attacks=[], defense = None):
         self.slot = slot
         self.trait_bonus = trait_bonus
         self.is_equipped = False
         self.attacks = attacks
+        self.defense = defense
  
     def toggle_equip(self):  #toggle equip/dequip status
         if self.is_equipped:

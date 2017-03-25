@@ -1,6 +1,10 @@
 import definitions as defn
 import libtcodpy as libtcod
 import title_screen as tit
+import sys
+
+#avoid recursion limit on saving
+sys.setrecursionlimit(99999)
 
 #############################################
 # Initialization & Main Loop

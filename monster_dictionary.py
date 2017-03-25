@@ -2,6 +2,7 @@ import map_functions as mpfn
 import object_classes as obcl
 import action_classes as accl
 import libtcodpy as libtcod
+import ai_dictionary as aidic
 
 ############################################################
 # MONSTER DICTIONARY
@@ -15,7 +16,8 @@ def create_monster(name, x, y):
     arg = mons_dict[name]
     creature_component = obcl.Creature(arg['life'], arg['mana'], arg['channeling'], arg['armor'], arg['experience'], arg['attacks'],
         death_function=obcl.monster_death)
-    ai_component = obcl.BasicMonster()
+    #ai_component = obcl.BasicMonster()
+    ai_component = aidic.Ai(aidic.ai_dict['mindless']['personality'],aidic.ai_dict['rational']['traits'])#aidic.ai_dict['traits'])
     monster = obcl.Object(x, y, arg['character'], arg['name'], arg['color'], traits=arg['traits'], description=arg['description'],
         blocks=True, creature=creature_component, ai=ai_component)
     return monster
@@ -64,5 +66,5 @@ mons_dict['darkfenne hydra'] = {
     'armor' : 1,
     'experience' : 100,
     'traits' : [['slow'],['regenerate',2]],
-    'attacks' : ['triple bite'],
+    'attacks' : ['triple bite', 'snapping bite'],
     'description' : 'uh oh'}

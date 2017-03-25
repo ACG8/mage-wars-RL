@@ -8,13 +8,13 @@ import libtcodpy as libtcod
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
-MAP_WIDTH = 80
-MAP_HEIGHT = 35
+MAP_WIDTH = 50 #80
+MAP_HEIGHT = 38
 
 #Dungeon Generation
-ROOM_MAX_SIZE = 9
-ROOM_MIN_SIZE = 5
-MAX_ROOMS = 40
+ROOM_MAX_SIZE = 7
+ROOM_MIN_SIZE = 3
+MAX_ROOMS = 20
 
 LIMIT_FPS = 20  #20 frames-per-second maximum
 
@@ -25,15 +25,23 @@ TORCH_RADIUS = 10
 
 #sizes and coordinates relevant for the GUI
 BAR_WIDTH = 20
-PANEL_HEIGHT = 15
-PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
 
-MSG_X = BAR_WIDTH + 2
-MSG_WIDTH = SCREEN_WIDTH - BAR_WIDTH - 2
-MSG_HEIGHT = PANEL_HEIGHT - 1
+STATS_WIDTH = SCREEN_WIDTH - MAP_WIDTH
+STATS_HEIGHT = MAP_HEIGHT #15
+STATS_Y = 0 #SCREEN_HEIGHT - PANEL_HEIGHT
+STATS_X = MAP_WIDTH
+
+MSG_Y = MAP_HEIGHT #
+MSG_X = 0 #BAR_WIDTH + 2
+MSG_WIDTH = SCREEN_WIDTH #SCREEN_WIDTH - BAR_WIDTH - 2
+MSG_HEIGHT = SCREEN_HEIGHT - MAP_HEIGHT # PANEL_HEIGHT - 1
+
+stats_panel = libtcod.console_new(STATS_WIDTH, STATS_HEIGHT)
+message_panel = libtcod.console_new(MSG_WIDTH,MSG_HEIGHT)
 
 INVENTORY_WIDTH = 50
 SPELLBOOK_WIDTH = 50
+SCHOOLS_WIDTH = 50
 
 HEAL_AMOUNT = 4
 
@@ -66,7 +74,7 @@ title_screen_choices = [
     'druid_v_necromancer.png']
 
 con = libtcod.console_new(MAP_WIDTH, MAP_HEIGHT)
-panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
+screen = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 mouse = libtcod.Mouse()
 key = libtcod.Key()
@@ -78,4 +86,6 @@ key = libtcod.Key()
 fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
 fov_recompute = True
 dungeon_level = 1
-global player, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon
+global player, training, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon, dungeon_unblocked_list, player_location_changed
+#define dijkstra maps
+global dijkstra_player_map, dijkstra_monster_map

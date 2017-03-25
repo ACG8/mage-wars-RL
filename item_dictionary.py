@@ -60,7 +60,7 @@ for spell in sdic.spell_dict:
     item_dict['scroll of ' + sdic.spell_dict[spell]['name']] = {
         'name' : 'scroll of ' + sdic.spell_dict[spell]['name'],
         'character' : '#',
-        'spawn chance' : 100 / sdic.spell_dict[spell]['level'],  #will need to think about this part of the function
+        'spawn chance' : 100 / sdic.spell_dict[spell]['level'][0][1],  #will need to think about this part of the function
         'color' : libtcod.lightest_yellow,
         'function' : scroll,
         'parameters' : {

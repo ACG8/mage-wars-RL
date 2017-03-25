@@ -10,6 +10,7 @@ import foo_dictionary as fdic
 import monster_dictionary as mdic
 import item_dictionary as idic
 import equipment_dictionary as edic
+import dijkstra as djks
             
 def make_map():
  
@@ -17,7 +18,7 @@ def make_map():
     defn.objects = [defn.player]
  
     #fill map with "blocked" tiles
-    defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.light_grey, True)
+    defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.grey, True)
         for y in range(defn.MAP_HEIGHT) ]
             for x in range(defn.MAP_WIDTH) ]
             
@@ -86,13 +87,27 @@ def make_map():
     defn.objects.append(defn.stairs)
     defn.stairs.send_to_back()  #so it's drawn below the monsters
 
+    #clear list of dungeon tiles
+
+    defn.dungeon_unblocked_list = []
+
+    #compute adjacencies and dijkstra maps. create list of unblocked tiles. Note that all adjacencies must be computed first, since computing dijkstra maps requires adjacencies
+    for y in range(defn.MAP_HEIGHT):
+        for x in range(defn.MAP_WIDTH):
+            tile = defn.dungeon[x][y]
+            tile.compute_adjacent_tiles()
+            #currently, the dungeon list includes only unblocked tiles
+            if not tile.blocked:
+                defn.dungeon_unblocked_list.append(tile)
+
 #populate each new room with objects
+
+
 def place_objects(room):
 
     #choose random number of monsters
     max_room_monsters = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
     num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
- 
     for i in range(num_monsters):
         #choose random spot for this monster
         x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)

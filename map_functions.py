@@ -1,5 +1,6 @@
 import definitions as defn
 import libtcodpy as libtcod
+import random
 
 def initialize_fov():
 

@@ -7,6 +7,12 @@ def msgbox(text, width=50):
     #use menu() as a sort of "message box"
     menu(text, [], width)
 
+def clear_screen():
+    for y in range(defn.SCREEN_HEIGHT):
+        for x in range(defn.SCREEN_WIDTH):
+            libtcod.console_set_char_background(defn.screen, x, y, libtcod.black, libtcod.BKGND_SET)
+    libtcod.console_blit(defn.screen, 0, 0, defn.SCREEN_WIDTH, defn.SCREEN_HEIGHT, 0, 0, 0)
+
 def message(new_msg, color = libtcod.white):
     #split the message if necessary, among multiple lines
     new_msg_lines = textwrap.wrap(new_msg, defn.MSG_WIDTH)
@@ -20,6 +26,8 @@ def message(new_msg, color = libtcod.white):
         defn.game_msgs.append((line, color))
 
 def menu(header, options, width):
+    #eliminate any other menus or messages
+    libtcod.console_flush()
     if len(options) > 26: raise ValueError('Cannot have a menu with more than 26 options.')
     #calculate total height for the header (after auto-wrap) and one line per option
     header_height = libtcod.console_get_height_rect(defn.con, 0, 0, width, defn.SCREEN_HEIGHT, header)
@@ -55,7 +63,7 @@ def menu(header, options, width):
     #convert the ASCII code to an index; if it corresponds to an option, return it
     index = key.c - ord('a')
     #convert the ASCII code to an index; if it corresponds to an option, return it
-    index = key.c - ord('a')
+    #index = key.c - ord('a')
     if index >= 0 and index < len(options): return index
     return None
 
@@ -64,17 +72,17 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
     bar_width = int(float(value) / maximum * total_width)
  
     #render the background first
-    libtcod.console_set_default_background(defn.panel, back_color)
-    libtcod.console_rect(defn.panel, x, y, total_width, 1, False, libtcod.BKGND_SCREEN)
+    libtcod.console_set_default_background(defn.stats_panel, back_color)
+    libtcod.console_rect(defn.stats_panel, x, y, total_width, 1, False, libtcod.BKGND_SCREEN)
  
     #now render the bar on top
-    libtcod.console_set_default_background(defn.panel, bar_color)
+    libtcod.console_set_default_background(defn.stats_panel, bar_color)
     if bar_width > 0:
-        libtcod.console_rect(defn.panel, x, y, bar_width, 1, False, libtcod.BKGND_SCREEN)
+        libtcod.console_rect(defn.stats_panel, x, y, bar_width, 1, False, libtcod.BKGND_SCREEN)
 
     #finally, some centered text with the values
-    libtcod.console_set_default_foreground(defn.panel, libtcod.white)
-    libtcod.console_print_ex(defn.panel, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER,
+    libtcod.console_set_default_foreground(defn.stats_panel, libtcod.white)
+    libtcod.console_print_ex(defn.stats_panel, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER,
         name + ': ' + str(value) + '/' + str(maximum))
 
 def get_names_under_mouse():

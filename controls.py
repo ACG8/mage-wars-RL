@@ -41,15 +41,12 @@ def spellbook_menu(header):
  
     index = gui.menu(header, options, defn.SPELLBOOK_WIDTH)
 
-    #if an item was chosen, return it
+    #if a spell was chosen, return it
     if index is None or len(defn.spellbook) == 0: return None
     return defn.spellbook[index]
 
 def handle_keys():
-    global keys
- 
-    #key = libtcod.console_check_for_keypress()  #real-time
-    #key = libtcod.console_wait_for_keypress(True)  #turn-based
+    #global keys
  
     if defn.key.vk == libtcod.KEY_ENTER and defn.key.lalt:
         #Alt+Enter: toggle fullscreen
@@ -157,16 +154,17 @@ def player_move_or_attack(dx, dy):
  
     #try to find an attackable object there
     target = None
-    for object in defn.objects:
-        if object.creature and object.x == x and object.y == y and object != defn.player:
-            target = object
+    for obj in defn.objects:
+        if obj.creature and obj.x == x and obj.y == y and obj != defn.player:
+            target = obj
             break
  
     #attack if target found, move otherwise
-    if target is not None:
-        defn.player.creature.attack(target)
-        defn.player.creature.adjust_turn_counter(2)
+    if target:
+        defn.player.creature.attack(target, defn.player.creature.active_attack)
+        defn.player.creature.adjust_turn_counter(3)
     else:
         defn.player.move(dx, dy)
         defn.fov_recompute = True
+        defn.player_location_changed = True
         defn.player.creature.adjust_turn_counter(3)

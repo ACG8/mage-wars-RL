@@ -56,37 +56,34 @@ def cast_lightning(name):
 
 ###may need to move these targeting functions
 def target_monster(max_range=None):
-    gui.message('Left-click an enemy to target it, or right-click to cancel.', libtcod.light_cyan)
+    gui.message('Left-click on target, or right-click to cancel.', libtcod.light_cyan)
+    rangemap = defn.fov_map
+    #primitive function highlighting range. Ideally would be implemented in read-only attribute of tile
+    libtcod.map_compute_fov(rangemap, defn.player.x, defn.player.y, max_range, defn.FOV_LIGHT_WALLS, defn.FOV_ALGO)
+    for y in range(defn.MAP_HEIGHT):
+        for x in range(defn.MAP_WIDTH):
+            if libtcod.map_is_in_fov(rangemap, x, y):
+                libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color * libtcod.lightest_green, libtcod.BKGND_SET)
     #returns a clicked monster inside FOV up to a range, or None if right-clicked
     while True:
         (x, y) = target_tile(max_range)
         if x is None:  #player cancelled
+            #remove highlight
+            for y in range(defn.MAP_HEIGHT):
+                for x in range(defn.MAP_WIDTH):
+                    if libtcod.map_is_in_fov(rangemap, x, y):
+                        libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
             return None
  
-        #return the first clicked monster, otherwise continue looping
+        #return the first clicked creature, otherwise continue looping
         for obj in defn.objects:
-            if obj.x == x and obj.y == y and obj.creature and obj != defn.player:
+            if obj.x == x and obj.y == y and obj.creature:
+                #remove highlight
+                for y in range(defn.MAP_HEIGHT):
+                    for x in range(defn.MAP_WIDTH):
+                        if libtcod.map_is_in_fov(rangemap, x, y):
+                            libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                 return obj
-
-def scroll(name):
-        sdic_list = sdic.spell_dict[name[10:]]
-        #looks at the string after the 10th character of the scroll's name to determine effect
-        spell = spcl.Spell(name=sdic_list[0], base_cost=0, use_function=sdic_list[3])
-        spell.cast(defn.player)
-        #learn spell
-        for your_spell in defn.spellbook:
-            if spell.name == your_spell.name:
-                your_spell.learn(1)
-                gui.message('You feel slightly more confident about casting ' + spell.name + '.', libtcod.white)
-                return
-        if len(defn.spellbook)<26:
-            spell.base_cost = sdic_list[2]
-            spell.cost = sdic_list[2] * 3
-            defn.spellbook.append(spell)
-            gui.message('You learned how to cast ' + spell.name + '!' , libtcod.white)
-        else:
-            #long run, allow players to forget spells. Also, Mordok's tome to add extra capacity of 13 spells.
-            gui.message('Unfortunately, your spellbook is full.', libtcod.white)
 
 def target_tile(max_range=None):
     #return the position of a tile left-clicked in player's FOV (optionally in a range), or (None,None) if right-clicked.

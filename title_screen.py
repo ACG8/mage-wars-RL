@@ -13,6 +13,8 @@ import spell_classes as spcl
 import spell_dictionary as sdic
 import creature_dictionary as cdic
 import equipment_dictionary as edic
+import mage_dictionary as mgdic
+import attack_dictionary as adic
 
 def main_menu():
     img = libtcod.image_load(random.choice(defn.title_screen_choices))
@@ -63,6 +65,7 @@ def load_game():
     mpfn.initialize_fov()
 
 def save_game():
+    #some recursive problem occurs, started after I rewrote the gui code
     #open a new empty shelve (possibly overwriting an old one) to write the game data
     file = shelve.open('savegame', 'n')
     file['map'] = defn.dungeon
@@ -83,18 +86,36 @@ def new_game():
     defn.spellbook = []
     defn.objects = []
     defn.dungeon = []
- 
-    #create object representing the player
-    creature_component = obcl.Creature(hp=30, mana=30, channeling=10, armor=0, xp=0, attacks=['basic melee attack'],
+
+    gui.clear_screen()
+    
+    gui.msgbox('Welcome to Etheria! You have been cruelly locked in the depths of a dungeon and slated to serve as an amusement in the next round of the Mage Wars. If you can escape the dungeon and defeat your captor in the arena, you will be given your freedom. Perhaps along the way you can learn a thing or two about magic...')
+
+    gui.clear_screen()
+
+    chosen = None
+    #while chosen == None:
+    index = gui.menu('Before your adventure begins, we need to know a little more about you. What sort of mage are you?', mgdic.mages, defn.SCHOOLS_WIDTH)
+    mage = mgdic.mage_dict[mgdic.mages[index]]
+    defense = adic.get_defense(mage['defense'])
+    
+    creature_component = obcl.Creature(hp=mage['life'], mana=mage['mana'], channeling=mage['channeling'], armor=0, xp=0, attacks=mage['attacks'], defenses = [defense],
         death_function=obcl.player_death)
-    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, traits=[['fast']], blocks=True, creature=creature_component)
+    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, traits=mage['traits'], blocks=True, creature=creature_component)
     defn.player.level = 1
- 
-    #generate map (at this point it's not drawn to the screen)
+
+    for spell in mage['spells']:
+        new_spell = sdic.get_spell(spell)
+        defn.spellbook.append(new_spell)
+
     dgen.make_map()
     mpfn.initialize_fov()
  
-    defn.game_state = 'playing'
+    #generate map (at this point it's not drawn to the screen)
  
-    #a warm welcoming message!
-    gui.message('Welcome to Etheria! May you last longer than your predecessor...', libtcod.red)
+    defn.game_state = 'playing'
+    defn.player_location_changed = True
+
+    game.render_all()
+
+    # can add initialization tests here:   
