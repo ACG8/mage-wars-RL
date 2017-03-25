@@ -26,34 +26,27 @@ def scroll(parameters):
 
 def book(parameters):
 
+    spellbook = defn.player.spellbook
+
     #lets you learn 1-6 copies of spell, depending on training and level.
-    copies = [4,2,1,1,0,0]
+    level_copies = [4,2,1,1,0,0]
 
     #this is not actually the spell instance that will go in your book - it is just a placeholder to find the properties
-    spell = sdic.get_spell(parameters['spell'])
+    spell = parameters['spell']
 
     if spell.properties['school'] in defn.antitraining:
-        copies = [2,1,0,0,0,0]
+        level_copies = [2,1,0,0,0,0]
     if spell.properties['school'] in defn.training:
-        copies = [6,4,2,2,1,1]
+        level_copies = [6,4,2,2,1,1]
 
-    if copies[spell.properties['level']-1] == 0:
+    if level_copies[spell.properties['level']-1] == 0:
         gui.message('Unfortunately, you are not skilled enough in the ' + spell.properties['school'] + ' school of magic to learn anything from this book.', libtcod.yellow)
         return 'cancelled'
+
+    copies = level_copies[spell.properties['level']-1]
     
-    if len(defn.spellbook)<26:
-        for known_spell in defn.spellbook:
-            if known_spell['name'] == spell.name:
-                for i in range(copies[spell.properties['level']-1]):
-                    addspell = sdic.get_spell(parameters['spell'])
-                    known_spell['copies'].append(addspell)
-                gui.message('As you memorize the spells contained in the tome, it crumbles to dust.', libtcod.green)
-                return 'succeeded'
-        spell_copies = []
-        for i in range(copies[spell.properties['level']-1]):
-            addspell = sdic.get_spell(parameters['spell'])
-            spell_copies.append(addspell)
-        defn.spellbook.append({'name' : spell.name, 'copies' : spell_copies, 'reusable' : spell.properties['reusable']})
+    if len(spellbook.contents)<26:
+        spellbook.insert(spell, copies)
         gui.message('As you memorize the spells contained in the tome, it crumbles to dust.', libtcod.green)
         return 'succeeded'
     else:
@@ -78,7 +71,7 @@ item_dict['healing potion'] = {
         'name' : 'healing potion',
         'graphic' : '!',
         'color' : libtcod.blue,
-        'description' : 'Mmm, healthy'}}
+        'description' : 'Heals 5 damage from drinker'}}
 
 #iterate over spells in the spell dictionary to create a scroll for every spell
 for spell in sdic.spell_dict: 
@@ -93,17 +86,5 @@ for spell in sdic.spell_dict:
             'name' : 'scroll of ' + sdic.spell_dict[spell]['name'],
             'graphic' : '#',
             'color' : libtcod.lightest_yellow,
-            'description' : 'Magic bound to words on paper, ready to be released when read. Good for one use only. If you already have knowledge of the spell, you need pay no mana to use this.'}}
-
-for spell in sdic.spell_dict: 
-    item_dict['book of ' + sdic.spell_dict[spell]['name']] = {
-        
-        'spawn chance' : [{'level' : 1, 'value' : 50/ sdic.spell_dict[spell]['level'][0][1]}],  #will need to think about this part of the function
-        'function' : book,
-        'parameters' : {
-            'spell' : sdic.spell_dict[spell]},
-        'properties' : {
-            'name' : 'book of ' + sdic.spell_dict[spell]['name'],
-            'graphic' : '#',
-            'color' : libtcod.lightest_green,
-            'description' : 'A detailed treatise on the workings of a single spell. By the time you finish reading it, casting that spell will be second nature to you.'}}
+            'description' : 'Magic bound to words on paper, ready to be released when read. Good for one use only.\n\n'
+            + sdic.spell_dict[spell]['properties']['description']}}

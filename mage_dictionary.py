@@ -5,6 +5,8 @@ import definitions as defn
 import spell_dictionary as sdic
 import spell_functions as spfn
 import gui
+import lists
+import input_text as itxt
 
 mages = [
     'arraxian crown warlock',
@@ -57,19 +59,20 @@ def create_player(mage, x, y):
             'name' : mage['name'],
             'graphic' : '@',
             'color' : libtcod.white,
-            'level' : 2,
+            'level' : 1,
             'subtypes' : None},
         blocks=True,
         creature=creature_component)
 
+    defn.player.spellbook = lists.List()
+    #defn.player.spellbook.contents = []
+    
     defn.training = mage['training']
     defn.antitraining = mage['antitraining']
 
     for spell in mage['spells']:
         new_spell = sdic.get_spell(spell)
-        #defn.spellbook.append(new_spell)
-        #for now, player has 1 copies. later, I'll change the way the spellbook works so that the player may have unlimited copies.
-        defn.spellbook.append({'name' : new_spell.name, 'copies' : [new_spell], 'reusable' : new_spell.properties['reusable']})
+        defn.player.spellbook.insert(new_spell, 'infinite')
     
     return defn.player
     
@@ -101,8 +104,9 @@ mage_dict['pellian forcemaster'] = {
             'distance' : 3},
         'properties' : {
             'school' : 'mind',
-            'reusable' : True},
-        'description' : '\"Come a little closer...\"'}],
+            'level' : 1,
+            'description' : 'Pulls target creature 3 steps toward caster.' +
+            '\"Come a little closer...\"'}}],
     
     'training' : ['mind'],
     'antitraining' : ['creatures'],
@@ -135,8 +139,8 @@ mage_dict['sortilege wizard'] = {
         'properties' : {
             'school' : 'arcane',
             'level' : 1,
-            'reusable' : True},
-            'description' : 'Zap!'}],
+            'description' : 'Attack 3\nEthereal.' +
+            '\n\nZap!'}}],
     
     'training' : ['arcane'],
     'antitraining' : [],
@@ -144,23 +148,26 @@ mage_dict['sortilege wizard'] = {
     'mana' : 10,
     'channeling' : 10}
 
-def tame_beast(parameters, source=None, target=None):
+def tame_animal(parameters, source=None, target=None):
     source=defn.player
     if parameters['target type']=='none':
         pass
             #eventually, maybe we can upgrade so that everything in sight is converted.
     elif parameters['target type']=='creature':
             #find target. currently geared to ranged attacks, though can easily be extended to melee
-        target=spfn.target_monster(parameters['range'])
+        target = spfn.target_monster(parameters['range'])
         if target:
             if target.creature.alignment == 'dungeon' and 'animal' in target.properties['subtypes']:
                 if defn.player.properties['level'] > target.properties['level']:
                     health_percentage = float(target.creature.hp) / float(target.creature.max_hp)
-                    roll = libtcod.random_get_int(0,1,100) * health_percentage
-                    if roll < 10 * float(defn.player.properties['level'] - target.properties['level']):
+                    if health_percentage <= parameters['threshold'] or target.creature.hp == 1:
                         target.creature.alignment = 'player'
-                        target.creature.color = libtcod.white
+                        target.color = libtcod.white
                         gui.message('The ' + target.name + ' submits to your will!', libtcod.green)
+                        choice = gui.menu('Name your new friend?', ['Yes', 'No'], 24)
+                        if choice == 0: #give it a name
+                            name = itxt.input_text(50, 5, 'What would you like to name it?\n\n', '\n\n(Press *ENTER* when done)')
+                            target.personal_name = name
                         return 'succeeded'
                     else:
                         gui.message('The ' + target.name + ' resists your attempts to tame it.', libtcod.red)
@@ -172,12 +179,27 @@ def tame_beast(parameters, source=None, target=None):
         else:
             return 'cancelled'
 
+tame_animal_spell = {
+        'name' : 'tame animal',
+        'base cost' : 1,
+        'type' : [],
+        'function' : tame_animal,
+        'parameters' : {
+            'range' : 3,
+            'target type' : 'creature',
+            'threshold' : 0.15},
+        'properties' : {
+            'school' : 'nature',
+            'level' : 1,
+            'description' : 'Tames a wounded animal. Animal must be at either 10% of its maximum life or have only 1 life remaining.\n\nOnly works on creatures of lower level than yourself.\n\n' +
+            '\"All you need is a gentle but...firm manner, and they will obey you always."'}}
+
 mage_dict['straywood beastmaster'] = {
     'name' : 'straywood beastmaster',
-    'traits' : [['melee +', 1],['aura of dominance']],
+    'traits' : [['melee +', 1]],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [],
+    'spells' : [tame_animal_spell],
     'training' : ['nature'],
     'antitraining' : ['fire'],
     'life' : 36,
@@ -186,10 +208,10 @@ mage_dict['straywood beastmaster'] = {
 
 mage_dict['johktari beastmaster'] = {
     'name' : 'johktari beastmaster',
-    'traits' : [['fast'],['ranged +',1],['aura of dominance']],
+    'traits' : [['fast'],['ranged +',1]],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [],
+    'spells' : [tame_animal_spell],
     'training' : ['nature'],
     'antitraining' : ['fire'],
     'life' : 34,
@@ -201,7 +223,7 @@ mage_dict['arraxian crown warlock'] = {
     'traits' : [['melee +', 1]],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [],
+    'spells' : [sdic.spell_dict['enfeeble']],
     'training' : ['fire', 'dark'],
     'antitraining' : ['holy'],
     'life' : 38,
@@ -213,7 +235,7 @@ mage_dict['darkfenne necromancer'] = {
     'traits' : [['poison immunity']],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [],
+    'spells' : [sdic.spell_dict['animate dead']],
     'training' : ['dark'],
     'antitraining' : ['holy'],
     'life' : 32,

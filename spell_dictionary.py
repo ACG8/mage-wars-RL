@@ -7,6 +7,24 @@ import libtcodpy as libtcod
 import map_functions as mpfn
 import time
 import game
+import monster_dictionary as mdic
+import enchantments as ech
+
+def enchant_spell(parameters, source=None, target=None):
+    if source==None:
+        source=defn.player
+        if parameters['target type']=='zone':
+            spfn.target_tile(arg['name'])
+            #placeholder for zone spells
+        elif parameters['target type']=='creature':
+            #find target. currently geared to ranged attacks, though can easily be extended to melee
+            target=spfn.target_monster(parameters['range'])
+            if target:
+                enchantment = ech.get_enchantment(parameters['enchantment'])
+                target.enchantments.append(enchantment)
+            else:
+                return 'cancelled'
+    
 
 def pushing_spell(parameters, source=None, target=None):
     if source==None:
@@ -31,6 +49,27 @@ def pushing_spell(parameters, source=None, target=None):
             else:
                 return 'cancelled'
 
+def reanimation_spell(parameters, source=None, target=None):
+    if source==None:
+        source=defn.player
+        (x,y) = spfn.target_tile(parameters['range'])
+        if x:
+            for obj in defn.dungeon[x][y].objects:
+                if obj.corpse:
+                    monster = mdic.get_monster(obj.corpse.name, x,y)
+                    if ['nonliving'] in monster.traits:
+                        return 'cancelled'
+                    ##this will lead to an eventual error when corpses are stacked, if the top corpse is nonliving then the rest cannot be reanimated. I'll fix this later.
+                    monster.creature.alignment = 'player'
+                    monster.traits += [['bloodthirsty +',0], ['slow'], ['nonliving']]
+                    monster.creature.conditions.append('zombie')
+                    defn.objects.append(monster)
+                    defn.dungeon[x][y].objects.append(monster)
+                    defn.objects.remove(obj)
+                    defn.dungeon[x][y].objects.remove(obj)
+                    return 'succeeded'
+        return 'cancelled'
+
 def healing_spell(parameters, source=None, target=None):
     if source==None:
         source=defn.player
@@ -45,7 +84,9 @@ def healing_spell(parameters, source=None, target=None):
             target=spfn.target_monster(parameters['range'])
             if target:
                 if parameters['amount healed']:
-                    target.creature.heal(parameters['amount healed'])
+                    #currently manages only random healing amounts
+                    amount = sum([libtcod.random_get_int(0,0,2) for i in range(parameters['amount healed'])])
+                    target.creature.heal(amount)
                 #if parameters['conditions removed']:
                     #condition removal function here
             else:
@@ -64,7 +105,7 @@ def attack_spell(parameters, source=None, target=None):
         source=defn.player
         if parameters['target type']=='zone':
             target_list = []
-            (x,y) = spfn.target_location(parameters['range']['distance'])
+            (x,y) = spfn.target_tile(parameters['range']['distance'])
             for obj in defn.objects:
                 if obj.creature and obj.distance(x,y) <= 3:
                     target_list.append(obj)
@@ -116,13 +157,11 @@ class Spell:
                 return 'cancelled'
             else:
                 return 'successful'
-
-    #reduce the price of the spell as you become more familiar with it
-    def learn(self, amount):
-        if self.cost > self.base_cost + amount:
-            self.cost -= amount
-        else:
-            self.cost = self.base_cost
+    def describe(self):
+        #render the screen. this erases the inventory and shows the names of objects under the mouse.
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
+        game.render_all()
+        gui.msgbox(self.properties['description'])
 
 #a list of spells, their associated levels, their base costs, their associated use functions, and their descriptions.
 
@@ -158,8 +197,8 @@ spell_dict['lightning bolt'] = {
     'properties' : {
         'school' : 'air',
         'level' : 2,
-        'reusable' : False},
-    'description' :'blah,blah'}
+        'description' : 'Lightning Attack 5\nEffective against incorporeal enemies\nMay daze or stun target\n\n' +
+        '\"You see soldiers of Westlock. I see little lightning rods.\"\n -Laddinfance, Primus of the White Spires'}}
 
 spell_dict['invisible fist'] = {
     'name' : 'invisible fist',
@@ -180,8 +219,8 @@ spell_dict['invisible fist'] = {
     'properties' : {
         'school' : 'mind',
         'level' : 1,
-        'reusable' : False},
-    'description' :'Mordok invented the spell as an easy way to enforce discipline amongst his apprentices'}
+        'description' : 'Attack 4\nEffective against incorporeal enemies\nMay daze target\n\n' +
+        'Mordok invented the spell as an easy way to enforce discipline amongst his apprentices'}}
 
 spell_dict['pillar of light'] = {
     'name' : 'pillar of light',
@@ -202,8 +241,8 @@ spell_dict['pillar of light'] = {
     'properties' : {
         'school' : 'holy',
         'level' : 1,
-        'reusable' : False},
-    'description' :'Blah blah blah light'}
+        'description' : 'Light Attack 2\nEffective against incorporeal enemies\n+2 vs. Nonliving targets\nMay daze or stun target\n\n' +
+        '\"The Dawnbreaker has cast\nhis judgement upon thee, and it is vengeance!\"\n -Yarbyn, Paladin of Westlock'}}
 
 spell_dict['ring of fire'] = {
     'name' : 'ring of fire',
@@ -224,8 +263,8 @@ spell_dict['ring of fire'] = {
     'properties' : {
         'school' : 'fire',
         'level' : 2,
-        'reusable' : False},
-    'description' :'\"Fire is a living thing, but it can be commanded\ninto shapes through your will. A wall is simple,\na ring difficult, but perhaps more useful.\"\n -Mastery of Fire: A Primer of Spells'}
+        'description' : 'Flame Attack 5\nMay burn targets\nAffects all other creatures within 3 tiles of caster\n\n' +
+        '\"Fire is a living thing, but it can be commanded\ninto shapes through your will. A wall is simple,\na ring difficult, but perhaps more useful.\"\n -Mastery of Fire: A Primer of Spells'}}
 
 spell_dict['hail of stones'] = {
     'name' : 'hail of stones',
@@ -246,8 +285,8 @@ spell_dict['hail of stones'] = {
     'properties' : {
         'school' : 'earth',
         'level' : 2,
-        'reusable' : False},
-    'description' :'\"Throwing a rock will not deter an enemy. But throwing a\nhundred rocks will rout them!\"\n -Gurmash, Orc Warmaster'}
+        'description' : 'Attack 4\nMay daze or stun targets\nAffects all creatures within 3 tiles of targeted location\n\n' +
+        '\"Throwing a rock will not deter an enemy. But throwing a\nhundred rocks will rout them!\"\n -Gurmash, Orc Warmaster'}}
 
 spell_dict['minor heal'] = {
     'name' : 'minor heal',
@@ -258,13 +297,13 @@ spell_dict['minor heal'] = {
     'parameters' : {
         'range' : 5,
         'target type' : 'creature',
-        'amount healed' : sum([libtcod.random_get_int(0,0,2) for i in range(5)]),
+        'amount healed' : 5,
         'conditions removed' : None},
     'properties' : {
         'school' : 'holy',
         'level' : 1,
-        'reusable' : False},
-    'description' : '\"No scratch is insignificant to the Goddess\"\n -On Health and Blessings True'}
+        'description' : 'Heal 5\n\n' +
+        '\"No scratch is insignificant to the Goddess\"\n -On Health and Blessings True'}}
 
 spell_dict['heal'] = {
     'name' : 'heal',
@@ -275,10 +314,44 @@ spell_dict['heal'] = {
     'parameters' : {
         'range' : 5,
         'target type' : 'creature',
-        'amount healed' : sum([libtcod.random_get_int(0,0,2) for i in range(8)]),
+        'amount healed' : 8,
         'conditions removed' : None},
     'properties' : {
         'school' : 'holy',
         'level' : 2,
-        'reusable' : False},
-    'description' : 'blah blah'}
+        'description' : 'Heal 8\n\n' +
+        '\"Westlock is a frail nation, but their faith is strong. With it,\nthey have saved those I have sent to death\'s door.\"\n -Trokoth, of the Blood Wave'}}
+
+spell_dict['animate dead'] = {
+    'name' : 'animate dead',
+    'level' : [['dark', 3]],
+    'base cost' : 9,
+    'type' : ['necro'],
+    'function' : reanimation_spell,
+    'parameters' : {
+        'range' : 3,
+        'target type' : 'remains'},
+    'properties' : {
+        'school' : 'dark',
+        'level' : 3,
+        'description' : 'Animates a nearby corpse to serve you as a zombie.\nHas no effect on the corpses of nonliving creatures.' +
+        '\"Come, forgotten one. I am your master now!\"\n - Shlaka, Blight of Darkfenne'}}
+
+spell_dict['enfeeble'] = {
+    'name' : 'enfeeble',
+    'level' : [['dark', 2]],
+    'base cost' : 6,
+    'type' : ['curse'],
+    'function' : enchant_spell,
+    'parameters' : {
+        'range' : 6,
+        'target type' : 'creature',
+        'enchantment' : {
+            'name' : 'enfeeble',
+            'function' : None,
+            'parameters' : None,
+            'trait bonus' : [['slow']]}},
+    'properties' : {
+        'school' : 'dark',
+        'level' : 2,
+        'description' : 'Slows the movement of a creature.'}}

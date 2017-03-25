@@ -15,6 +15,9 @@ import monster_dictionary as mdic
 import equipment_dictionary as edic
 import mage_dictionary as mgdic
 import attack_dictionary as adic
+import item_dictionary as idic
+import input_text as iptext
+import new_game
 
 def main_menu():
     img = libtcod.image_load(random.choice(defn.title_screen_choices))
@@ -34,7 +37,7 @@ def main_menu():
         choice = gui.menu('', ['Play a new game', 'Continue last game', 'Quit'], 24)
 
         if choice == 0:  #new game
-            new_game()
+            new_game.new_game()
             game.play_game()
         if choice == 1:  #load last game
             try:
@@ -77,64 +80,3 @@ def save_game():
     file['stairs_index'] = defn.objects.index(defn.stairs)
     file['dungeon_level'] = defn.dungeon_level
     file.close()
-
-def new_game():
-
-    #clear lists
-    defn.game_msgs = []
-    defn.inventory = []
-    defn.spellbook = []
-    defn.objects = []
-    defn.dungeon = []
-
-    defn.dungeon_level = 1
-
-    gui.clear_screen()
-    
-    gui.msgbox('Welcome to Etheria! You have been cruelly locked in the depths of a dungeon and slated to serve as an amusement in the next round of the Mage Wars. If you can escape the dungeon and defeat your captor in the arena, you will be given your freedom. Perhaps along the way you can learn a thing or two about magic...')
-
-    gui.clear_screen()
-
-    chosen = None
-    #while chosen == None:
-
-    name = ''
-    (width, height) = (50, 5)
-    while True:
-        libtcod.console_flush()
-        window = libtcod.console_new(width, height)
-        libtcod.console_set_default_foreground(window, libtcod.white)
-        libtcod.console_print_rect_ex(window, 0, 0, width, height, libtcod.BKGND_NONE, libtcod.LEFT, 'What is your name?\n\n' + name.capitalize() + '\n\n(press *Enter* to continue)')
-        (x, y) = (defn.SCREEN_WIDTH/2 - width/2, defn.SCREEN_HEIGHT/2 - height/2)
-        libtcod.console_blit(window, 0, 0, width, height, 0, x, y, 1.0, 0.7)
-        libtcod.console_flush()
-        key = libtcod.console_wait_for_keypress(True)
-        index = key.c - ord('a')
-        if index in range(26):
-            name += chr(key.c)
-        elif len(name) > 0:
-            if key.c == 8:
-                name = name[:-1]
-            if key.c == 13:
-                break
-        gui.clear_screen()
-    
-    gui.clear_screen()
-    
-    index = gui.menu('Before your adventure begins, we need to know a little more about you. What sort of mage are you?', mgdic.mages, defn.SCHOOLS_WIDTH)
-    mage = mgdic.mage_dict[mgdic.mages[index]]
-    mgdic.create_player(mage, 0, 0)
-    defn.player.personal_name = name
-
-    dgen.make_map()
-    mpfn.initialize_fov()
- 
-    #generate map (at this point it's not drawn to the screen)
- 
-    defn.game_state = 'playing'
-    defn.player_location_changed = True
-    defn.autoplaying = None
-    gui.message ('Press *?* for a list of commands', libtcod.white)
-    game.render_all()
-
-    # can add initialization tests here:   

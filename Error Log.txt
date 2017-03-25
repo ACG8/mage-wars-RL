@@ -18,3 +18,12 @@ When a corpse dies, its remains can burn. Should probably remove all conditions 
 Zone attack area highlighting persists after the attack has been made. Probably a problem with the targeting function.
 
 Next: improve taming system.
+
+Different books of spells are counted as different instances. We could add a check for the spell's name, but it seems simpler to define only one instance of each spell and just refer to that. We can init a set of spells in the game at the start. This also allows us to ensure that each game uses only a subset of the available spells.
+
+New idea for spell system: keep scrolls as-is, but change how books work. Each book is a random set of spells, as in crawl. You cannot learn all the spells in the book; after you learn one, the book vanishes. The number of copies of that spell that you get is based on your level, the spell's level, and the spell's school. You have to decide which spell in a book is the most valuable.
+
+Selecting a spell and then cancelling takes 1 time unit
+
+Each mage should have 1 starting cantrip built in spell.
+	Beastmaster: 

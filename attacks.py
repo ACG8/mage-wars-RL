@@ -1,8 +1,13 @@
+#This file contains the functions that control attacking
+#Currently, this file is not referenced by any other file.
+
 import libtcodpy as libtcod
 import gui
 import data_methods as data
 import random
 import definitions as defn
+
+#Define the attack class
 
 class Attack:
     #any attack made by one creature against another
@@ -131,10 +136,6 @@ class Attack:
             if effects and target.creature:
                 #for now, don't worry about poison immunity.
                 for effect in effects:
-                    #poison immunity
-                    if effect in ['rot', 'weak', 'cripple', 'tainted'] and ['poison immunity'] in target.traits:
-                        gui.message (target.name + ' resists the poison!', libtcod.purple)
-                        break
                     #long term should probably define a class of conditions or something so I don't have to maintain a list of what constitutes a condition.
                     if effect in ['rot','weak','burn','cripple']:
                         gui.message (source.name.capitalize() + ' inflicts ' + effect + ' on ' + target.name + '!', libtcod.purple)
@@ -166,71 +167,3 @@ class Attack:
                         target.creature.attack(source,attack)
                         attack.is_counterstrike = False
                         break
-
-def get_defense(dictionary):
-    if dictionary:
-        defense = Defense(
-            dictionary['minimum roll'],
-            dictionary['max uses'],
-            dictionary['range'],
-            dictionary['effect'])
-        return defense
-    return None
-    
-
-#define defenses here (no point making a separate document yet)
-class Defense:
-    def __init__(self, minimum_roll, max_uses, defense_range, effect):
-        self.minimum_roll = minimum_roll
-        self.max_uses = max_uses
-        self.uses = max_uses
-        self.range = defense_range
-        self.effect = effect
-
-    def use(self, bonus):
-        if self.uses > 0:
-            roll = bonus + libtcod.random_get_int(0,1,12)
-            self.uses -= 1
-            if roll >= self.minimum_roll:
-                return True
-            
-    def reset(self):
-        self.uses = self.max_uses
-
-#retrieve an attack from the dictionary
-def get_attack(dictionary):
-    if dictionary:
-        attack = Attack(
-            name = dictionary['name'],
-            attack_range = dictionary['range'],
-            dice = dictionary['attack dice'],
-            traits = dictionary['traits'],
-            effects = dictionary['effects'],
-            speed = dictionary['speed'])
-        return attack
-    return None
-
-attk_dict = {}
-
-#note: effects should be listed in ascending order
-#creature attacks
-
-#attk_dict['basic melee attack'] = {
- #   'name' : 'basic melee attack',
-  #  'attack dice' : 3,
-   # 'traits' : [],
-    #'effects' : [],
-#    'target type' : 'creature',
- #   'range' : {'type' : 'melee', 'distance' : 1},
-  #  'speed' : {'type' : 'quick', 'turns' : 2}}
-
-#spell attacks
-
-#attk_dict['lightning bolt'] = {
- #   'name' : 'lightning bolt',
-  #  'attack dice' : 5,
-   # 'traits' : [['lightning'],['ethereal']],
-    #'effects' : [[['daze'],6],[['stun'],8]],
-#    'target type' : 'creature',
- #   'range' : {'type' : 'melee', 'distance' : 1},
-  #  'speed' : {'type' : 'quick', 'turns' : 1}}

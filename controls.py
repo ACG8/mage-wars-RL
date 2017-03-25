@@ -32,26 +32,34 @@ def inventory_menu(header):
     return defn.inventory[index].item
 
 def spellbook_menu(header):
+    spellbook = defn.player.spellbook
+    contents = spellbook.contents
     #will implement cantrips later.
     #show a menu with each spell in memory as an option
-    if len(defn.spellbook) == 0:
+    if len(contents) == 0:
         options = ['You don\'t know any spells.']
     else:
         options = []
-        #show spell names and mana costs
-        for spell in defn.spellbook:
-            if not spell['reusable']:
-                text = str(len(spell['copies'])) + ' ' + str(spell['name'].capitalize()) + ' (' + str(spell['copies'][0].cost) + ')'
-            else:
-                text = str('  ' + spell['name'].capitalize()) + ' (' + str(spell['copies'][0].cost) + ')'
+        #show spell names and mana costs. Indent properly so that all spells are aligned.
+        for entry in contents:
+            quantity = entry[1]
+            spell = entry[0]
+            
+            if quantity == 'infinite':
+                text = '   ' + spell.name.capitalize() + ' (' + str(spell.cost) + ')'
+            elif spellbook.get_quantity(spell) < 10:
+                text = str(quantity) + '  ' + spell.name.capitalize() + ' (' + str(spell.cost) + ')'
+            elif spellbook.get_quantity(spell) < 100:
+                text = str(quantity) + ' ' + spell.name.capitalize() + ' (' + str(spell.cost) + ')'
             options.append(text)
  
     index = gui.menu(header, options, defn.SPELLBOOK_WIDTH)
+    
 
     #if a spell was chosen, return it
-    if index is None or len(defn.spellbook) == 0: return None
-    if defn.spellbook[index]['copies'] == 0 : return None
-    return defn.spellbook[index]
+    if index is None or len(contents) == 0: return None
+    if spellbook.get_quantity(spellbook.get_item_at_position(index)) == 0 : return None
+    return spellbook.get_item_at_position(index)
 
 def handle_keys():
     #global keys
@@ -200,16 +208,23 @@ def handle_keys():
                         return
 
             if key_char == '?':
-                gui.msgbox('The following is a list of all commands in the game:' +
-                           '\n\n, = pick up item from current position' +
-                           '\n\ni = use an item from your inventory'+
+                gui.msgbox('Use the numpad keys to move around. You can mouse-over any object to identify it. The following keys can be used to get more information:' +
+
                            '\n\nI = examine an item in your inventory' +
-                           '\n\nd = drop an item from your inventory' +
-                           '\n\nz = choose a spell from your spellbook to cast' +
+                           '\nZ = examine a spell in your spellbook' +
+                           '\nc = access information about your character' +
+
+                           '\n\nThe following keys may be used to interact with your environment.' +
+                           
+                           '\n\n, = pick up item from current position' +
+                           '\ni = use an item from your inventory'+
+                           '\nd = drop an item from your inventory' +
+                           '\nz = choose a spell from your spellbook to cast' +
+                           
+                           '\n\nTo avoid tedious repetition, you can automate certain tasks:' +
                            '\n\n< = travel to the nearest portal and pass through' +
-                           '\n\no = autoexplore (press any key to stop exploring)' +
-                           '\n\nc = access information about your character' +
-                           '\n\nTAB = move towards/attack nearest enemy'
+                           '\no = autoexplore (press any key to stop exploring)' +
+                           '\nTAB = move towards/attack nearest enemy'
                            ,50)
 
             if key_char == 'i':
@@ -227,19 +242,27 @@ def handle_keys():
                     info.describe()
 
             if key_char == 'z':
+                spellbook = defn.player.spellbook
                 #show the spellbook; if a spell is selected, use it
                 chosen_spell = spellbook_menu('Press the key next to a spell to cast it, or any other to cancel.\n')
                 if chosen_spell is not None:
-                    if defn.player.creature.cast_spell(chosen_spell['copies'][0]) != 'cancelled':
-                        if not chosen_spell['reusable']:
-                            chosen_spell['copies'].remove(chosen_spell['copies'][0])
-                            if not chosen_spell['copies']:
-                            #remove empty spell lists
-                                defn.spellbook.remove(chosen_spell)
+                    if defn.player.creature.cast_spell(chosen_spell) != 'cancelled':
+                        spellbook.remove(chosen_spell, 1)
                     return
+
+            if key_char == 'Z':
+                #show the inventory; if an item is selected, describe it
+                chosen_spell = spellbook_menu('Press the key next to a spell for more information, or any other to cancel.\n')
+                if chosen_spell is not None:
+                    chosen_spell.describe()
 
             if key_char == 'd':
                 #show the inventory; if an item is selected, drop it
+                chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
+                if chosen_item is not None:
+                    chosen_item.drop()
+                    return
+                
                 chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
                 if chosen_item is not None:
                     chosen_item.drop()
@@ -313,7 +336,9 @@ def handle_keys():
             if key_char == 'w':
                 #defn.player.creature.heal(30)
                 #dgen.next_level()
-                defn.inventory.append(idic.get_item('scroll of hail of stones',0,0))
+                defn.inventory.append(idic.get_item('scroll of animate dead',0,0))
+                defn.inventory.append(idic.get_item('scroll of heal',0,0))
+                defn.inventory.append(idic.get_item('scroll of minor heal',0,0))
                 
             return 'didnt-take-turn'
 

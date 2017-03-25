@@ -93,10 +93,7 @@ def get_names_at_location(x,y):
     if x in range(defn.MAP_WIDTH) and y in range(defn.MAP_HEIGHT):
         for obj in defn.dungeon[x][y].objects:
             if obj.creature and not obj == defn.player:
-                if obj.creature.alignment == 'player':
-                    names.append(('Friendly ' + obj.name + ' (' + str(obj.creature.hp) + '/' + str(obj.creature.max_hp) + ')').capitalize())
-                else:
-                    names.append((obj.name + ' (' + str(obj.creature.hp) + '/' + str(obj.creature.max_hp) + ')').capitalize())
+                names.append((obj.name + ', ' + obj.properties['name'] + ' (' + str(obj.creature.hp) + '/' + str(obj.creature.max_hp) + ')').capitalize())
             else:
                 names.append(obj.name.capitalize())
 

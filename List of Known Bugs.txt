@@ -1,0 +1,14 @@
+Saving/Loading does not work properly due to obsolete data structures. Some items are not included on list of objects
+
+Sometimes cancelling a spell causes nearby enemies to vanish for a frame.
+(Note: this error is difficult to reproduce. Not sure what conditions are.)
+
+If you cancel/have error while autoplaying you get an error upon continuing
+
+Removing tainted does not remove the 3 damage from taint.
+
+When a corpse dies, its remains can burn. Should probably remove all conditions upon death.
+
+Zone attack area highlighting persists after the attack has been made. Probably a problem with the targeting function.
+
+Selecting a spell and then cancelling takes 1 time unit

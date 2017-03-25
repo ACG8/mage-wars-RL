@@ -260,7 +260,7 @@ mons_dict['darkfenne hydra'] = {
 
 mons_dict['stonegaze basilisk'] = {
     'spawn chance' : [
-        {'level' : 2, 'value' : 100},
+        {'level' : 2, 'value' : 10},
         {'level' : 3, 'value' : 20}],
     'life' : 10,
     'mana' : 0,

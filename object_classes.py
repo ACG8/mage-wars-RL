@@ -9,6 +9,8 @@ import game
 import equipment_dictionary as edic
 import data_methods as data
 import dijkstra as djks
+import lists
+import copy
 
 class Object:
     #this is a generic object: the player, a monster, an item, the stairs...
@@ -24,6 +26,9 @@ class Object:
         self.y = y
         self.base_traits = traits
         self.properties = properties
+        self.corpse = None
+
+        self.enchantments = []
 
         self.creature = creature
         if self.creature:  #let the fighter component know who owns it
@@ -59,10 +64,15 @@ class Object:
     @property
     def traits(self):
         bonus_traits = []
-        bonus_sources = edic.get_all_equipped(self) #+enchantments + conditions, etc.
+        bonus_sources = edic.get_all_equipped(self)
+        bonus_enchant_sources = self.enchantments
         if bonus_sources:
             for obj in bonus_sources:
                 bonus_traits += obj.trait_bonus
+        if bonus_enchant_sources:
+            for ech in bonus_enchant_sources:
+                bonus_traits += ech.trait_bonus
+            
         traits = self.base_traits + bonus_traits
                     
         return traits
@@ -317,6 +327,7 @@ class Creature:
                         self.adjust_turn_counter(1)
             else:
                 self.adjust_turn_counter(3)
+                gui.message (self.owner.name.capitalize() + ' attempts to move but is too crippled!', libtcod.orange)
                 cripple_message = False
                 for condition in self.conditions:
                     if condition == 'cripple' and libtcod.random_get_int(0,1,12) >= 7:
@@ -467,12 +478,18 @@ def monster_death(monster):
     #attacked and doesn't move
     #error - the change appears to affect all such dictionaries
     gui.message('The ' + monster.name + ' gurgles as its life-blood spills upon the sands!', libtcod.orange)
-    monster.properties['graphic'] = '%'
-    monster.properties['color'] = libtcod.dark_red
-    monster.blocks = False
-    monster.creature = None
-    monster.ai = None
-    monster.properties['name'] = 'remains of ' + monster.name
-    monster.send_to_back()
-
+    if 'zombie' in monster.creature.conditions:
+        #obliterate it
+        defn.objects.remove(monster)
+        defn.dungeon[monster.x][monster.y].objects.remove(monster)
+    else:
+        monster.properties['graphic'] = '%'
+        monster.properties['color'] = libtcod.dark_red
+        #for now, we will store the identity as an identical copy of the monster at death
+        monster.corpse = copy.deepcopy(monster)
+        monster.blocks = False
+        monster.creature = None
+        monster.ai = None
+        monster.properties['name'] = 'remains of ' + monster.name
+        monster.send_to_back()
 

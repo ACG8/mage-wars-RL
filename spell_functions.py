@@ -11,15 +11,6 @@ import spell_classes as spcl
 import spell_dictionary as sdic
 import time
 
-def cast_heal(name):
-    #heal the player
-    if defn.player.creature.hp == defn.player.creature.max_hp:
-        gui.message('You are already at full health.', libtcod.red)
-        return 'cancelled'
- 
-    gui.message('Your wounds start to feel better!', libtcod.light_violet)
-    defn.player.creature.heal(defn.HEAL_AMOUNT)
-
 ###may need to move these targeting functions
 def target_monster(max_range=None):
     gui.message('Left-click on target, or right-click to cancel.', libtcod.light_cyan)
@@ -28,10 +19,10 @@ def target_monster(max_range=None):
         
     rangemap = defn.fov_map
     libtcod.map_compute_fov(rangemap, defn.player.x, defn.player.y, max_range, defn.FOV_LIGHT_WALLS, defn.FOV_ALGO)
-    for y in range(defn.MAP_HEIGHT):
-        for x in range(defn.MAP_WIDTH):
-            if libtcod.map_is_in_fov(rangemap, x, y):
-                libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color * libtcod.lightest_green, libtcod.BKGND_SET)
+    #for y in range(defn.MAP_HEIGHT):
+     #   for x in range(defn.MAP_WIDTH):
+      #      if libtcod.map_is_in_fov(rangemap, x, y):
+       #         libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color * libtcod.lightest_green, libtcod.BKGND_SET)
     #returns a clicked monster inside FOV up to a range, or None if right-clicked
     while True:
 
@@ -49,18 +40,16 @@ def target_monster(max_range=None):
         #return the first clicked creature, otherwise continue looping
         for obj in defn.dungeon[x][y].objects:
             if obj.creature:
-                #remove highlight
-                for y in range(defn.MAP_HEIGHT):
-                    for x in range(defn.MAP_WIDTH):
-                        if libtcod.map_is_in_fov(rangemap, x, y):
-                            libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                 return obj
+                #remove highlight
+                #for y in range(defn.MAP_HEIGHT):
+                 #   for x in range(defn.MAP_WIDTH):
+                  #      if libtcod.map_is_in_fov(rangemap, x, y):
+                   #         libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
+                
 
-#I should combine both of these targeting functions, for simplicity.
-
-def target_location(max_range=None):
-    gui.message('Left-click on target, or right-click to cancel.', libtcod.light_cyan)
-    #primitive function highlighting range. Ideally would be implemented in read-only attribute of tile
+def target_tile(max_range=None):
+    #return the position of a tile left-clicked in player's FOV (optionally in a range), or (None,None) if right-clicked.
 
     rangemap = defn.fov_map
     libtcod.map_compute_fov(rangemap, defn.player.x, defn.player.y, max_range, defn.FOV_LIGHT_WALLS, defn.FOV_ALGO)
@@ -68,33 +57,7 @@ def target_location(max_range=None):
         for x in range(defn.MAP_WIDTH):
             if libtcod.map_is_in_fov(rangemap, x, y):
                 libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color * libtcod.lightest_green, libtcod.BKGND_SET)
-    #returns a clicked monster inside FOV up to a range, or None if right-clicked
-    while True:
 
-        (x, y) = target_tile(max_range)
-            
-        if x is None:  #player cancelled
-            #remove highlight
-            for y in range(defn.MAP_HEIGHT):
-                for x in range(defn.MAP_WIDTH):
-                    if libtcod.map_is_in_fov(rangemap, x, y):
-                        libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
-            return None
-        #return the tile coordinates
-        return (x, y)
-        
-        #return the first clicked creature, otherwise continue looping
-        for obj in defn.dungeon[x][y].objects:
-            if obj.creature:
-                #remove highlight
-                for y in range(defn.MAP_HEIGHT):
-                    for x in range(defn.MAP_WIDTH):
-                        if libtcod.map_is_in_fov(rangemap, x, y):
-                            libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
-                return obj
-
-def target_tile(max_range=None):
-    #return the position of a tile left-clicked in player's FOV (optionally in a range), or (None,None) if right-clicked.
     while True:
         #render the screen. this erases the inventory and shows the names of objects under the mouse.
         libtcod.console_flush()
@@ -106,9 +69,17 @@ def target_tile(max_range=None):
         #accept the target if the player clicked in FOV, and in case a range is specified, if it's in that range
         if (defn.mouse.lbutton_pressed and libtcod.map_is_in_fov(defn.fov_map, x, y) and
             (max_range is None or defn.player.distance(x, y) <= max_range)):
+            for j in range(defn.MAP_HEIGHT):
+                for i in range(defn.MAP_WIDTH):
+                    if libtcod.map_is_in_fov(rangemap, i, j):
+                        libtcod.console_set_char_background(defn.con, i, j, defn.dungeon[i][j].color, libtcod.BKGND_SET)
             return (x, y)
         
         if defn.mouse.rbutton_pressed or defn.key.vk == libtcod.KEY_ESCAPE:
+            for j in range(defn.MAP_HEIGHT):
+                for i in range(defn.MAP_WIDTH):
+                    if libtcod.map_is_in_fov(rangemap, i, j):
+                        libtcod.console_set_char_background(defn.con, i, j, defn.dungeon[i][j].color, libtcod.BKGND_SET)
             return (None, None)  #cancel if the player right-clicked or pressed Escape
 
 def closest_monster(max_range):

@@ -112,7 +112,7 @@ def play_game():
             if player_action == 'exit':
                 tit.save_game()
                 break
-        #for now, we recompute the player's djkstra map here.
+        #for now, we recompute the player's dijkstra map here.
         if defn.player_location_changed:
             defn.dijkstra_player_map = djks.Map([defn.player])
             defn.dijkstra_player_map.compute_map()
