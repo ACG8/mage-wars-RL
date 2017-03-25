@@ -25,6 +25,7 @@ MSG_WIDTH = SCREEN_WIDTH - BAR_WIDTH - 2
 MSG_HEIGHT = PANEL_HEIGHT - 1
 
 INVENTORY_WIDTH = 50
+SPELLBOOK_WIDTH = 50
 
 HEAL_AMOUNT = 4
 
@@ -47,5 +48,7 @@ CHARACTER_SCREEN_WIDTH = 30
 #list of title screen graphics
 title_screen_choices = [
     'beastmaster_v_warlock.png',
-    'forcemaster_v_warlord.png']
+    'forcemaster_v_warlord.png',
+    'wizard_v_priestess.png',
+    'druid_v_necromancer.png']
 
