@@ -20,7 +20,7 @@ class dMap:
        for y in range(ysize):
            tmp = []
            for x in range(xsize):
-               tmp.append(1)
+               tmp.append('#')
            self.mapArr.append( tmp )
  
        w,l,t=self.makeRoom()
@@ -41,7 +41,7 @@ class dMap:
            if roomDone==0: #If placement failed increase possibility map is full
                failed+=1
            elif roomDone==2: #Possiblilty of linking rooms
-               if self.mapArr[ey2][ex2]==0:
+               if self.mapArr[ey2][ex2]=='.':
                    if randrange(100)<7:
                        self.makePortal(ex,ey)
                    failed+=1
@@ -55,6 +55,17 @@ class dMap:
            if len(self.roomList)==mrooms:
                failed=fail
        self.finalJoins()
+
+
+      #invert map
+       temp = self.mapArr
+
+       self.mapArr = [] 
+       for x in range(xsize):
+           tmp = []
+           for y in range(ysize):
+               tmp.append(temp[y][x])
+           self.mapArr.append( tmp )
  
    def makeRoom(self):
        """Randomly produce room size"""
@@ -65,21 +76,16 @@ class dMap:
  
    def makeCorridor(self):
        """Randomly produce corridor length and heading"""
-       clength=randrange(18)+3
+       #Set length and direction
+       length=randrange(18)+3
        heading=randrange(4)
-       if heading==0: #North
-           wd=1
-           lg=-clength
-       elif heading==1: #East
-           wd=clength
-           lg=1
-       elif heading==2: #South
-           wd=1
-           lg=clength
-       elif heading==3: #West
-           wd=-clength
-           lg=1
-       return wd,lg,heading
+       #Set dimensions
+       (X0,X1) = {0 : (1,-length),
+                  1 : (length,1),
+                  2 : (1,length),
+                  3 : (-length,1)
+                  }[heading]
+       return X0,X1,heading
  
    def placeRoom(self,ll,ww,xposs,yposs,xsize,ysize,rty,ext):
        """Place feature if enough space and return canPlace as true or false"""
@@ -111,7 +117,7 @@ class dMap:
        else:
            for j in range(ll):
                for k in range(ww):
-                   if self.mapArr[(ypos)+j][(xpos)+k]!=1:
+                   if self.mapArr[(ypos)+j][(xpos)+k] not in [' ','#']:
                        canPlace=2
        #If there is space, add to list of rooms
        if canPlace==1:
@@ -120,11 +126,11 @@ class dMap:
            #randomly choose room type
            roomChoice = randrange(100)
            if roomChoice<70: #normal room
-               self.fillRoom(room,2,0)
+               self.fillRoom(room,' ','.')
            elif roomChoice<90: #grass room
-               self.fillRoom(room,2,6)
+               self.fillRoom(room,' ','\"')
            elif roomChoice<100: #window room
-               self.fillRoom(room,7,0)
+               self.fillRoom(room,'#','.')
        return canPlace #Return whether placed is true/false
 
    def fillRoom(self,room,wall,floor):
@@ -166,24 +172,18 @@ class dMap:
                rx=room[2]-1
                rx2=rx-1
                ry2=ry
-           if self.mapArr[ry][rx] in [1,2,7]: #If space is a wall, exit
+           if self.mapArr[ry][rx] in [' ','#']: #If space is a wall, exit
                break
        return rx,ry,rx2,ry2,rw
  
    def makePortal(self,px,py):
        """Create doors in walls"""
        ptype=randrange(100)
-       if ptype>90: #Secret door
-           self.mapArr[py][px]=5
-           return
-       elif ptype>75: #Closed door
-           self.mapArr[py][px]=4
-           return
-       elif ptype>40: #Open door
-           self.mapArr[py][px]=3
+       if ptype>40: #Open door
+           self.mapArr[py][px]='+'
            return
        else: #Hole in the wall
-           self.mapArr[py][px]=0
+           self.mapArr[py][px]='.'
  
    def joinCorridor(self,cno,xp,yp,ed,psb):
        """Check corridor endpoint and make an exit if it links to another room"""
@@ -236,7 +236,7 @@ class dMap:
                coords=[endx,endy+2,endx,endy+1]
                checkExit.append(coords)
        for xxx,yyy,xxx1,yyy1 in checkExit: #Loop through possible exits
-           if self.mapArr[yyy][xxx]==0: #If joins to a room
+           if self.mapArr[yyy][xxx] in ['.','\"']: #If joins to a room
                if randrange(100)<psb: #Possibility of linking rooms
                    self.makePortal(xxx1,yyy1)
  
@@ -257,13 +257,13 @@ def test_map():
    for y in range(starty):
            line = ""
            for x in range(startx):
-                   if themap.mapArr[y][x]==0:
-                           line += "."
-                   if themap.mapArr[y][x]==1:
-                           line += " "
-                   if themap.mapArr[y][x]==2:
-                           line += "#"
-                   if themap.mapArr[y][x]==3 or themap.mapArr[y][x]==4 or themap.mapArr[y][x]==5:
-                           line += "+"
+                   if themap.mapArr[y][x]=='.':
+                      line += "."
+                   if themap.mapArr[y][x]==' ':
+                      line += " "
+                   if themap.mapArr[y][x]=='#':
+                      line += "#"
+                   if themap.mapArr[y][x]=='+':
+                      line += "+"
            print line
 

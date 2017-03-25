@@ -184,35 +184,23 @@ def handle_keys():
             defn.autoplaying = None
         
         #movement keys
-        if defn.key.vk==libtcod.KEY_KP8:
-            player_move_or_attack(0, -1)
-     
-        elif defn.key.vk==libtcod.KEY_KP2:
-            player_move_or_attack(0, 1)
-     
-        elif defn.key.vk==libtcod.KEY_KP4:
-            player_move_or_attack(-1, 0)
-     
-        elif defn.key.vk==libtcod.KEY_KP6:
-            player_move_or_attack(1, 0)
+        
+        try:
+            (dx0,dx1) = {libtcod.KEY_KP1 : (-1,1),
+                         libtcod.KEY_KP2 : (0,1),
+                         libtcod.KEY_KP3 : (1,1),
+                         libtcod.KEY_KP4 : (-1,0),
+                         libtcod.KEY_KP6 : (1,0),
+                         libtcod.KEY_KP7 : (-1,-1),
+                         libtcod.KEY_KP8 : (0,-1),
+                         libtcod.KEY_KP9 : (1,-1)
+                         }[defn.key.vk]
+            player_move_or_attack(dx0,dx1)
+        except:
+            
+            if defn.key.vk==libtcod.KEY_KP5:
+                return
 
-        elif defn.key.vk==libtcod.KEY_KP7:
-            player_move_or_attack(-1, -1)
-     
-        elif defn.key.vk==libtcod.KEY_KP9:
-            player_move_or_attack(1, -1)
-     
-        elif defn.key.vk==libtcod.KEY_KP1:
-            player_move_or_attack(-1, 1)
-     
-        elif defn.key.vk==libtcod.KEY_KP3:
-            player_move_or_attack(1, 1)
-
-        elif defn.key.vk==libtcod.KEY_KP5:
-            pass
-
-        else:
-            #test for other keys
             key_char = chr(defn.key.c)
  
             if key_char == ',':

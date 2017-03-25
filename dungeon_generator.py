@@ -12,6 +12,8 @@ import equipment_dictionary as edic
 import dijkstra as djks
 import map_generator as mgen
 import map_populator as mpop
+import mazeGenerator
+import caveGenerator
 from random import *
 
 def make_map():
@@ -25,15 +27,27 @@ def make_map():
 
     #generate a dungeon map and print it to the dungeon
     level = mgen.dMap()
-    level.makeMap(defn.MAP_WIDTH,defn.MAP_HEIGHT,110,20,60)
+
+    #choose leveltype
+    randomint = randrange(100)
+    if randomint > 40: #dungeon
+        level.makeMap(defn.MAP_WIDTH,defn.MAP_HEIGHT,110,20,60)
+    elif randomint > 10: #cave
+        level.mapArr = caveGenerator.generateCave((defn.MAP_WIDTH,defn.MAP_HEIGHT),defn.MAP_WIDTH*defn.MAP_HEIGHT*2/3)
+    else: #maze
+        level.mapArr = mazeGenerator.generateMaze((defn.MAP_WIDTH,defn.MAP_HEIGHT))
 
     for y in range(defn.MAP_HEIGHT):
         for x in range(defn.MAP_WIDTH):
             print_tile(level,[x,y])
 
+    #generate 12 encounters
+    for i in range(12):
+        generate_encounters()
+
     #populate each room
-    for room in level.roomList:
-        generate_encounters(room)
+    #for room in level.roomList:
+       # generate_encounters(room)
 
     #send all items to the back
     for obj in defn.objects:
@@ -69,7 +83,7 @@ def make_map():
                 defn.dungeon_unblocked_list.append(tile)
 
 #Populate a room
-def generate_encounters(room):
+def generate_encounters(room=None):
 
     #MONSTERS (60% chance of appearing)
     max_room_monsters = mpfn.from_dungeon_level([
@@ -94,7 +108,13 @@ def generate_encounters(room):
             equipment = edic.get_equipment(arg['properties']['name'],0,0)
             equipment.always_visible = True
             equipments.append(equipment)
-        mpop.populate_room(equipments,room)
+
+        #place in rooms or randomly
+        if room==None:
+            for equip in equipments:
+                mpop.place_randomly(equip)
+        else:
+            mpop.populate_room(equipments,room)
 
     #ITEMS (40% chance of appearing)
     if randrange(100)<40:
@@ -108,7 +128,13 @@ def generate_encounters(room):
             item = idic.get_item(arg['properties']['name'],0,0)
             item.always_visible = True
             items.append(item)
-        mpop.populate_room(items,room)
+
+        #place in rooms or randomly
+        if room==None:
+            for item in items:
+                mpop.place_randomly(item)
+        else:
+            mpop.populate_room(items,room)
 
         #MONSTERS
     
@@ -121,7 +147,13 @@ def generate_encounters(room):
             arg = rng.random_choice(mdic.mons_dict)
             monster = mdic.get_monster(arg['properties']['name'],0,0)
             monsters.append(monster)
-        mpop.populate_room(monsters,room)
+
+        #place in rooms or randomly
+        if room==None:
+            for monst in monsters:
+                mpop.place_randomly(monst)
+        else:
+            mpop.populate_room(monsters,room)
 
     #EQUIPMENT (20% chance of appearing
 
@@ -129,36 +161,36 @@ def generate_encounters(room):
 def print_tile(dMap,x):
     x0 = x[0]
     x1 = x[1]
-    value = dMap.mapArr[x1][x0]
-    if value==0: #dirt floor
+    value = dMap.mapArr[x0][x1]
+    if value=='.': #dirt floor
         defn.dungeon[x0][x1].blocked = False
         defn.dungeon[x0][x1].block_sight = False
         defn.dungeon[x0][x1].name = 'floor'
         defn.dungeon[x0][x1].color = libtcod.sepia
         defn.dungeon[x0][x1].graphic = '.'
         
-    if value==1 or value == 2: #wall
+    if value==' ': #wall
         defn.dungeon[x0][x1].blocked = True
         defn.dungeon[x0][x1].block_sight = True
         defn.dungeon[x0][x1].name = 'wall'
         defn.dungeon[x0][x1].color = libtcod.grey
         defn.dungeon[x0][x1].graphic = ' '
         
-    if value==3 or value == 4 or value == 5: #door
+    if value=='+': #door
         defn.dungeon[x0][x1].blocked = False
         defn.dungeon[x0][x1].block_sight = True
         defn.dungeon[x0][x1].name = 'door'
         defn.dungeon[x0][x1].color = libtcod.blue
         defn.dungeon[x0][x1].graphic = '+'
 
-    if value==6: #grass floor
+    if value=='\"': #grass floor
         defn.dungeon[x0][x1].blocked = False
         defn.dungeon[x0][x1].block_sight = False
         defn.dungeon[x0][x1].name = 'grass floor'
         defn.dungeon[x0][x1].color = libtcod.darkest_green
         defn.dungeon[x0][x1].graphic = '\"'
 
-    if value==7: #window
+    if value=='#': #window
         defn.dungeon[x0][x1].blocked = True
         defn.dungeon[x0][x1].block_sight = False
         defn.dungeon[x0][x1].name = 'window'

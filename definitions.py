@@ -8,8 +8,8 @@ import libtcodpy as libtcod
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
-MAP_WIDTH = 48 #80
-MAP_HEIGHT = 38
+MAP_WIDTH = 48
+MAP_HEIGHT = 36
 
 #Dungeon Generation
 ROOM_MAX_SIZE = 7
@@ -68,10 +68,10 @@ MAX_TILE_SEARCH = 50
 
 #list of title screen graphics
 title_screen_choices = [
-    'beastmaster_v_warlock.png',
-    'forcemaster_v_warlord.png',
-    'wizard_v_priestess.png',
-    'druid_v_necromancer.png']
+    'titles/beastmaster_v_warlock.png',
+    'titles/forcemaster_v_warlord.png',
+    'titles/wizard_v_priestess.png',
+    'titles/druid_v_necromancer.png']
 
 con = libtcod.console_new(MAP_WIDTH, MAP_HEIGHT)
 screen = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
