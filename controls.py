@@ -10,6 +10,7 @@ import spell_classes as spcl
 import game
 import data_methods as data
 import dijkstra as djks
+import item_dictionary as idic
 
 def inventory_menu(header):
     #show a menu with each item of the inventory as an option
@@ -311,7 +312,8 @@ def handle_keys():
 
             if key_char == 'w':
                 #defn.player.creature.heal(30)
-                dgen.next_level()
+                #dgen.next_level()
+                defn.inventory.append(idic.get_item('scroll of hail of stones',0,0))
                 
             return 'didnt-take-turn'
 

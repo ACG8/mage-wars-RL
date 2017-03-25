@@ -22,6 +22,14 @@ class Ai:
     def take_turn(self):
         #a basic monster takes its turn. If you can see it, it can see you
         monster = self.owner
+
+        #for now, ranged enemies only attack player. Will revamp AI later. Note that ranged allies will attack player w/ current programming.
+        
+        for attack in self.owner.creature.attacks:
+            if attack.range['type'] == 'ranged' and monster.distance_to(defn.player) <= attack.range['distance'] and libtcod.map_is_in_fov(defn.fov_map, monster.x, monster.y):
+                monster.creature.attack(defn.player,attack)
+                monster.creature.adjust_turn_counter(attack.speed['turns'])
+                return None
         destination = self.find_best_move()
         monster.creature.try_to_move(destination.x,destination.y)
 
@@ -32,7 +40,7 @@ class Ai:
         #or statement leads to hearing based on dijkstra distance from player; some creatures can hear
         #hearing disabled for now
         actor = self.owner
-        
+
         #if libtcod.map_is_in_fov(defn.fov_map, creature.x, creature.y):
 
         #temporary disable for testing
@@ -69,9 +77,11 @@ class Ai:
         #ai for allies
         if self.owner.creature.alignment == 'player':
 
-            player_weight = 0.0
+            #changing the denominator affects how far the creature is willing to stray. Probably would work better to switch between different states (guarding, attacking, etc.) to determine weights.
+            player_weight = float(defn.player.distance_to(actor))/5.0
+            #high fov weight so monster remains in FOV
             fov_weight = 0.0
-            monster_weight = 1
+            monster_weight = 1.0
 
             dijkstra_map = djks.Map([])
 
@@ -127,8 +137,3 @@ ai_dict['canine'] = {
         'sight' : 7,
         'smell' : 12,
         'hearing' : 9}}
-
-#ai_dict['scaredy-cat'] = {
- #   'personality' : {
-  #      'fear' : 1.0},
-   # 'traits' : []}

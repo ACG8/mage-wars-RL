@@ -1,3 +1,5 @@
+
+	
 Fix issue where cancelling a spell causes nearby enemies to vanish.
 Note: this error is difficult to reproduce. Not sure what conditions are.
 
@@ -8,3 +10,11 @@ Error in loading where some items are not on object list.
 Allow item stacking (perhaps only for items, not equipment). Use same system as spell stacking. Might want to define a function for this.
 
 For future: when implementing status removal, make sure that removing tainted also removes damage from taint.
+
+Long term - need to reform attacking time so that it is a property of each attack. In general, need to move away from hardcoding action times.
+
+When a corpse dies, its remains can burn. Should probably remove all conditions upon death.
+
+Zone attack area highlighting persists after the attack has been made. Probably a problem with the targeting function.
+
+Next: improve taming system.

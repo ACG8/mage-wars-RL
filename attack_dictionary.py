@@ -2,6 +2,7 @@ import libtcodpy as libtcod
 import gui
 import data_methods as data
 import random
+import definitions as defn
 
 class Attack:
     #any attack made by one creature against another
@@ -15,14 +16,36 @@ class Attack:
         self.speed = speed
 
     def declare_attack(self, source, target, dice_bonus, d12_bonus):
-        #to avoid the corpse-counterattack problem, check if target is a monster.
+        #to avoid the corpse-counterattack problem, check if target is attackable.
         if target.creature:
-            self.resolve_attack_roll(self.dice + dice_bonus, d12_bonus, source, target)
-            #additional strikes do not gain any bonuses.
-            if source.creature and (['doublestrike'] in self.traits or ['triplestrike']) in self.traits:
-                self.resolve_attack_roll(self.dice, d12_bonus, source, target)
-            if source.creature and ['triplestrike'] in self.traits:
-                self.resolve_attack_roll(self.dice, d12_bonus, source, target)
+            if source.creature and 'daze' in source.creature.conditions and libtcod.random_get_int(0,1,12) < 7:
+                gui.message (source.name.capitalize() + ' is too dazed to attack!', libtcod.orange)
+                source.creature.adjust_turn_counter(3)
+            else:
+                self.resolve_attack_roll(self.dice + dice_bonus, d12_bonus, source, target)
+                #additional strikes do not gain any bonuses.
+                if source.creature and (['doublestrike'] in self.traits or ['triplestrike']) in self.traits:
+                    self.resolve_attack_roll(self.dice, d12_bonus, source, target)
+                if source.creature and ['triplestrike'] in self.traits:
+                    self.resolve_attack_roll(self.dice, d12_bonus, source, target)
+                #check for animal taming, soldier recruitment, etc. Have to check again to see if target is attackable
+                if target.creature and target.creature.alignment == 'dungeon' and source==defn.player and ['aura of dominance'] in source.traits and 'animal' in target.properties['subtypes']:
+                    if defn.player.properties['level'] > target.properties['level']:
+                        health_percentage = float(target.creature.hp) / float(target.creature.max_hp)
+                        roll = libtcod.random_get_int(0,1,100) * health_percentage
+                        if roll < 10 * float(defn.player.properties['level'] - target.properties['level']):
+                            target.creature.alignment = 'player'
+                            target.creature.color = libtcod.white
+                            gui.message('The ' + target.name + ' submits to your will!', libtcod.green)
+            #remove daze (and potentially other conditions) at conclusion of attacks
+            if source.creature:
+                daze_removal = False
+                for condition in source.creature.conditions:
+                    if condition == 'daze':
+                        source.creature.conditions.remove(condition)
+                        daze_removal = True
+                if daze_removal:
+                    gui.message (source.name.capitalize() + ' is dazed no longer!', libtcod.orange)
 
     def resolve_attack_roll(self, dice, d12_bonus, source, target):
 
@@ -40,6 +63,10 @@ class Attack:
                 defense = random.choice(defense_choices)
                 #for now, no bonuses. Adding defense bonuses later should be easy.
                 def_bonus = data.sum_values_from_list(source.traits, 'defense +')
+                #daze reduction in defense roll
+                for condition in target.creature.conditions:
+                    if condition == 'daze':
+                        def_bonus -= 2
                 if defense.use(def_bonus):
                     gui.message (target.name.capitalize() + ' avoids ' + source.name + '\'s attack!', libtcod.red)
                     avoided = True
@@ -73,6 +100,16 @@ class Attack:
 
             armor = max(target.creature.armor - data.sum_values_from_list(self.traits, 'piercing +'), 0)
 
+            #sturdy (vet's belt effect)
+            for trait in target.traits:
+                if trait[0] == 'sturdy +':
+                    if critical_damage >= trait[1]:
+                        normal_damage += trait[1]
+                        critical_damage -= trait[1]
+                    else:
+                        normal_damage += critical_damage
+                        critical_damage = 0
+            
             if ['resilient'] in target.traits:
                 damage = critical_damage
             else:
@@ -104,13 +141,19 @@ class Attack:
                 #for now, don't worry about poison immunity.
                 for effect in effects:
                     #long term should probably define a class of conditions or something so I don't have to maintain a list of what constitutes a condition.
-                    if effect in ['rot','weak','burn']:
+                    if effect in ['rot','weak','burn','cripple']:
                         gui.message (source.name.capitalize() + ' inflicts ' + effect + ' on ' + target.name + '!', libtcod.purple)
                         target.creature.conditions.append(effect)
                     if effect == 'tainted':
                         gui.message (source.name.capitalize() + 's\' attack taints ' + target.name + '!', libtcod.purple)
                         target.creature.conditions.append('tainted')
                         target.creature.take_damage(3)
+                    if effect == 'daze':
+                        gui.message (target.name + ' is dazed!', libtcod.purple)
+                        target.creature.conditions.append('daze')
+                    if effect == 'stun':
+                        gui.message (target.name + ' is stunned!', libtcod.purple)
+                        target.creature.conditions.append('stun')
 
             #resolve counterstrikes. currently just takes the first counterstriking attack it finds.
             #note that counterstrikes currently use up time
@@ -177,22 +220,22 @@ attk_dict = {}
 #note: effects should be listed in ascending order
 #creature attacks
 
-attk_dict['basic melee attack'] = {
-    'name' : 'basic melee attack',
-    'attack dice' : 3,
-    'traits' : [],
-    'effects' : [],
-    'target type' : 'creature',
-    'range' : {'type' : 'melee', 'distance' : 1},
-    'speed' : {'type' : 'quick', 'turns' : 2}}
+#attk_dict['basic melee attack'] = {
+ #   'name' : 'basic melee attack',
+  #  'attack dice' : 3,
+   # 'traits' : [],
+    #'effects' : [],
+#    'target type' : 'creature',
+ #   'range' : {'type' : 'melee', 'distance' : 1},
+  #  'speed' : {'type' : 'quick', 'turns' : 2}}
 
 #spell attacks
 
-attk_dict['lightning bolt'] = {
-    'name' : 'lightning bolt',
-    'attack dice' : 5,
-    'traits' : [['lightning'],['ethereal']],
-    'effects' : [[['daze'],6],[['stun'],8]],
-    'target type' : 'creature',
-    'range' : {'type' : 'melee', 'distance' : 1},
-    'speed' : {'type' : 'quick', 'turns' : 1}}
+#attk_dict['lightning bolt'] = {
+ #   'name' : 'lightning bolt',
+  #  'attack dice' : 5,
+   # 'traits' : [['lightning'],['ethereal']],
+    #'effects' : [[['daze'],6],[['stun'],8]],
+#    'target type' : 'creature',
+ #   'range' : {'type' : 'melee', 'distance' : 1},
+  #  'speed' : {'type' : 'quick', 'turns' : 1}}

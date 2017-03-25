@@ -53,27 +53,41 @@ def healing_spell(parameters, source=None, target=None):
         
 
 def attack_spell(parameters, source=None, target=None):
-    if source==None:
-        source=defn.player
-        if parameters['target type']=='zone':
-            spfn.target_tile(arg['name'])
-            #placeholder for zone spells
-        elif parameters['target type']=='none':
-            pass
-            #placeholder for untargetable spells, e.g. ring of fire
-        elif parameters['target type']=='creature':
-            #find target. currently geared to ranged attacks, though can easily be extended to melee
-            target=spfn.target_monster(parameters['range']['distance'])
-            if target:
-            #use attack against target.
-
-                attack = adic.Attack(
+    attack = adic.Attack(
                     parameters['name'],
                     parameters['attack dice'],
                     parameters['range'],
                     parameters['traits'],
                     parameters['effects'],
                     parameters['speed'])
+    if source==None:
+        source=defn.player
+        if parameters['target type']=='zone':
+            target_list = []
+            (x,y) = spfn.target_location(parameters['range']['distance'])
+            for obj in defn.objects:
+                if obj.creature and obj.distance(x,y) <= 3:
+                    target_list.append(obj)
+            for target in target_list:
+                attack.declare_attack(source, target, 0, 0)
+
+        elif parameters['target type']=='circle':
+            #attack everything within range
+            target_list = []
+            for obj in defn.objects:
+                #AOE is hardcoded at 3, to simulate a zone.
+                if obj.creature and not obj == source and source.distance_to(obj) <= 3:
+                    target_list.append(obj)
+            for target in target_list:
+                attack.declare_attack(source, target, 0, 0)
+
+        elif parameters['target type']=='creature':
+            #find target. currently geared to ranged attacks, though can easily be extended to melee
+            target=spfn.target_monster(parameters['range']['distance'])
+            if target:
+            #use attack against target.
+
+                
             #in future, will add ability to boost attack. Also, rather than generating an attack, the spell should explicitly have the attack instance when created.
                 attack.declare_attack(source, target, 0, 0)
             else:
@@ -168,6 +182,72 @@ spell_dict['invisible fist'] = {
         'level' : 1,
         'reusable' : False},
     'description' :'Mordok invented the spell as an easy way to enforce discipline amongst his apprentices'}
+
+spell_dict['pillar of light'] = {
+    'name' : 'pillar of light',
+    'level' : [['holy', 1]],
+    'base cost' : 5,
+    'type' : ['light'],
+    'function' : attack_spell,
+    'parameters' : {
+        
+        'name' : 'pillar of light',
+        'attack dice' : 2,
+        'traits' : [['ethereal'],['vs nonliving +', 2]],
+        'effects' : [[['daze'],4],[['stun'],11]],
+        'target type' : 'creature',
+        'range' : {'type' : 'ranged', 'distance' : 6},
+        'speed' : {'type' : 'quick', 'turns' : 1}},
+    
+    'properties' : {
+        'school' : 'holy',
+        'level' : 1,
+        'reusable' : False},
+    'description' :'Blah blah blah light'}
+
+spell_dict['ring of fire'] = {
+    'name' : 'ring of fire',
+    'level' : [['fire', 2]],
+    'base cost' : 9,
+    'type' : ['flame'],
+    'function' : attack_spell,
+    'parameters' : {
+        
+        'name' : 'ring of fire',
+        'attack dice' : 5,
+        'traits' : [['unavoidable'],['defrost'],['zone']],
+        'effects' : [[['burn'],7],[['burn','burn'],11]],
+        'target type' : 'circle',
+        'range' : {'type' : 'ranged', 'distance' : 0},
+        'speed' : {'type' : 'full', 'turns' : 3}},
+    
+    'properties' : {
+        'school' : 'fire',
+        'level' : 2,
+        'reusable' : False},
+    'description' :'\"Fire is a living thing, but it can be commanded\ninto shapes through your will. A wall is simple,\na ring difficult, but perhaps more useful.\"\n -Mastery of Fire: A Primer of Spells'}
+
+spell_dict['hail of stones'] = {
+    'name' : 'hail of stones',
+    'level' : [['earth', 2]],
+    'base cost' : 8,
+    'type' : [],
+    'function' : attack_spell,
+    'parameters' : {
+        
+        'name' : 'hail of stones',
+        'attack dice' : 4,
+        'traits' : [['unavoidable'],['zone']],
+        'effects' : [[['daze'],6],[['stun'],11]],
+        'target type' : 'zone',
+        'range' : {'type' : 'ranged', 'distance' : 6},
+        'speed' : {'type' : 'full', 'turns' : 3}},
+    
+    'properties' : {
+        'school' : 'earth',
+        'level' : 2,
+        'reusable' : False},
+    'description' :'\"Throwing a rock will not deter an enemy. But throwing a\nhundred rocks will rout them!\"\n -Gurmash, Orc Warmaster'}
 
 spell_dict['minor heal'] = {
     'name' : 'minor heal',

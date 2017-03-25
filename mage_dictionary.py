@@ -7,16 +7,19 @@ import spell_functions as spfn
 import gui
 
 mages = [
+    'arraxian crown warlock',
     'pellian forcemaster',
     'straywood beastmaster',
     'johktari beastmaster',
+    'sortilege wizard',
+    'darkfenne necromancer'
     ]
 
 basic_attack = {
         
         'name' : 'basic melee attack',
         'attack dice' : 3,
-        'traits' : [['beastmaster']],
+        'traits' : [],
         'effects' : [],
         'target type' : 'creature',
         'range' : {'type' : 'melee', 'distance' : 1},
@@ -107,7 +110,40 @@ mage_dict['pellian forcemaster'] = {
     'mana' : 10,
     'channeling' : 10}
 
-#error (probably not from this module: taming a creature unsuccessfully causes it to temporarily disappear.
+mage_dict['sortilege wizard'] = {
+    'name' : 'sortilege wizard',
+    'traits' : [],
+    'attacks' : [basic_attack],
+    'defense' : None,
+    'spells' : [{
+        
+        'name' : 'arcane zap',
+        'level' : [['arcane', 1]],
+        'base cost' : 1,
+        'type' : [],
+        'function' : sdic.attack_spell,
+        'parameters' : {
+            
+            'name' : 'arcane zap',
+            'attack dice' : 3,
+            'traits' : [['ethereal']],
+            'effects' : [],
+            'target type' : 'creature',
+            'range' : {'type' : 'ranged', 'distance' : 6},
+            'speed' : {'type' : 'quick', 'turns' : 1}},
+        
+        'properties' : {
+            'school' : 'arcane',
+            'level' : 1,
+            'reusable' : True},
+            'description' : 'Zap!'}],
+    
+    'training' : ['arcane'],
+    'antitraining' : [],
+    'life' : 32,
+    'mana' : 10,
+    'channeling' : 10}
+
 def tame_beast(parameters, source=None, target=None):
     source=defn.player
     if parameters['target type']=='none':
@@ -136,27 +172,12 @@ def tame_beast(parameters, source=None, target=None):
         else:
             return 'cancelled'
 
-
 mage_dict['straywood beastmaster'] = {
     'name' : 'straywood beastmaster',
-    'traits' : [['melee +', 1]],
+    'traits' : [['melee +', 1],['aura of dominance']],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [{
-        
-        'name' : 'tame beast',
-        'level' : [['nature', 1]],
-        'base cost' : 1,
-        'type' : ['command'],
-        'function' : tame_beast,
-        'parameters' : {
-            'range' : 3,
-            'target type' : 'creature'},
-        'properties' : {
-            'school' : 'nature',
-            'reusable' : True},
-        'description' : 'Attempts to tame a nearby animal. Only animals with a level less than your own can be tamed. The more heavily wounded an animal is, the more likely it is to obey.'}],
-    
+    'spells' : [],
     'training' : ['nature'],
     'antitraining' : ['fire'],
     'life' : 36,
@@ -165,26 +186,36 @@ mage_dict['straywood beastmaster'] = {
 
 mage_dict['johktari beastmaster'] = {
     'name' : 'johktari beastmaster',
-    'traits' : [['fast'],['ranged +',1]],
+    'traits' : [['fast'],['ranged +',1],['aura of dominance']],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [{
-        
-        'name' : 'tame beast',
-        'level' : [['nature', 1]],
-        'base cost' : 1,
-        'type' : ['command'],
-        'function' : tame_beast,
-        'parameters' : {
-            'range' : 3,
-            'target type' : 'creature'},
-        'properties' : {
-            'school' : 'nature',
-            'reusable' : True},
-        'description' : 'Attempts to tame a nearby animal. Only animals with a level less than your own can be tamed. The more heavily wounded an animal is, the more likely it is to obey.'}],
-    
+    'spells' : [],
     'training' : ['nature'],
     'antitraining' : ['fire'],
     'life' : 34,
     'mana' : 10,
     'channeling' : 9}
+
+mage_dict['arraxian crown warlock'] = {
+    'name' : 'arraxian crown warlock',
+    'traits' : [['melee +', 1]],
+    'attacks' : [basic_attack],
+    'defense' : None,
+    'spells' : [],
+    'training' : ['fire', 'dark'],
+    'antitraining' : ['holy'],
+    'life' : 38,
+    'mana' : 10,
+    'channeling' : 9}
+
+mage_dict['darkfenne necromancer'] = {
+    'name' : 'darkfenne necromancer',
+    'traits' : [['poison immunity']],
+    'attacks' : [basic_attack],
+    'defense' : None,
+    'spells' : [],
+    'training' : ['dark'],
+    'antitraining' : ['holy'],
+    'life' : 32,
+    'mana' : 10,
+    'channeling' : 10}

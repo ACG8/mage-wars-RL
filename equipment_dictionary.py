@@ -106,6 +106,55 @@ equip_dict['leather boots'] = {
         'color' : libtcod.orange,
         'description' : 'Leather Boots\n\nArmor +1\n\n\n"They\'re good for kicking, tripping, stomping, and walking. I prefer running myself.\"\n  -Baldric the Yellow'}}
 
+equip_dict['reflex boots'] = {
+    'spawn chance' : [
+        {'level' : 1, 'value' : 20},
+        {'level' : 2, 'value' : 30}],
+    'slot' : 'feet',
+    'traits' : [],
+    'trait bonus' : [],
+    'attacks' : [],
+    'defense' : {
+        'minimum roll' : 7,
+        'range' : 'any',
+        'max uses' : 1,
+        'effect' : None},
+    'properties' : {
+        'name' : 'reflex boots',
+        'graphic' : ':',
+        'color' : libtcod.light_han,
+        'description' : 'Reflex Boots\n\nGrants a Defense (7)\n\n\n\"Agility is the greatest asset on the battlefield.\"\n -Johktari Battle Manual'}}
+
+equip_dict['regrowth belt'] = {
+    'spawn chance' : [
+        {'level' : 1, 'value' : 5},
+        {'level' : 2, 'value' : 20}],
+    'slot' : 'belt',
+    'traits' : [],
+    'trait bonus' : [['regenerate ',2]],
+    'attacks' : [],
+    'defense' : None,
+    'properties' : {
+        'name' : 'regrowth belt',
+        'graphic' : '=',
+        'color' : libtcod.darkest_green,
+        'description' : 'Regrowth Belt\n\nRegenerate 2\n\n\n\"The belt actually heals his life?\"\n\"And it holds his pants up, too.\"'}}
+
+equip_dict['veteran\'s belt'] = {
+    'spawn chance' : [
+        {'level' : 1, 'value' : 10},
+        {'level' : 2, 'value' : 30}],
+    'slot' : 'belt',
+    'traits' : [],
+    'trait bonus' : [['sturdy +',2]],
+    'attacks' : [],
+    'defense' : None,
+    'properties' : {
+        'name' : 'veteran\'s belt',
+        'graphic' : '=',
+        'color' : libtcod.dark_sepia,
+        'description' : 'Veteran\'s Belt\n\nSturdy 2\n\n\n\Your skill may be refined, but my experience is greater.'}}
+
 equip_dict['leather gloves'] = {
 
     'spawn chance' : [

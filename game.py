@@ -79,7 +79,10 @@ def render_all():
     #display names of objects under the mouse
     libtcod.console_print_ex(defn.stats_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, defn.player.name.capitalize() + ', ' + defn.player.properties['name'].capitalize())
     libtcod.console_set_default_foreground(defn.stats_panel, libtcod.light_gray)
-    libtcod.console_print_ex(defn.stats_panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, gui.get_names_under_mouse())
+    names = gui.get_names_at_location(defn.mouse.cx, defn.mouse.cy)
+    if not names:
+        names = gui.get_names_at_location(defn.player.x, defn.player.y)
+    libtcod.console_print_ex(defn.stats_panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, names)
  
     #blit the panels to the root console 0
     libtcod.console_blit(defn.message_panel, 0, 0, defn.MSG_WIDTH, defn.MSG_HEIGHT, 0, defn.MSG_X, defn.MSG_Y)
@@ -103,11 +106,6 @@ def play_game():
         #if it is the player's turn, handle keys and exit game if needed
         if defn.player.creature.turn_counter == 0:
             defn.player.clear()
-            #reset defenses
-            if defn.player.creature.defenses:
-                for defense in defn.player.creature.defenses:
-                    if defense:
-                        defense.reset()
             player_action = ctrl.handle_keys()
             #defn.dungeon[defn.player.x][defn.player.y].scent+=100
             render_all()

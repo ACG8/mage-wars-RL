@@ -84,15 +84,12 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
     libtcod.console_set_default_foreground(defn.stats_panel, libtcod.white)
     libtcod.console_print_ex(defn.stats_panel, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER,
         name + ': ' + str(value) + '/' + str(maximum))
-
-def get_names_under_mouse():
- 
-    #return a string with the names of all objects under the mouse
-    (x, y) = (defn.mouse.cx, defn.mouse.cy)
+    
+def get_names_at_location(x,y):
 
     names = []
-
-    #check whether (x,y) is actually on the map
+    
+        #check whether (x,y) is actually on the map
     if x in range(defn.MAP_WIDTH) and y in range(defn.MAP_HEIGHT):
         for obj in defn.dungeon[x][y].objects:
             if obj.creature and not obj == defn.player:
@@ -104,5 +101,5 @@ def get_names_under_mouse():
                 names.append(obj.name.capitalize())
 
     names = '\n'.join(names)  #join the names, each in its own line
-    
+
     return names

@@ -229,7 +229,7 @@ mons_dict['darkfenne hydra'] = {
     'channeling' : 0,
     'armor' : 1,
     'experience' : 100,
-    'traits' : [['slow'],['regenerate',2]],
+    'traits' : [['slow'],['regenerate ',2]],
     'attacks' : [{
         
         'name' : 'triple bite',
@@ -256,4 +256,42 @@ mons_dict['darkfenne hydra'] = {
         'color' : libtcod.dark_red,
         'level' : 4,
         'subtypes' : ['serpent'],
+        'description' : 'uh oh'}}
+
+mons_dict['stonegaze basilisk'] = {
+    'spawn chance' : [
+        {'level' : 2, 'value' : 100},
+        {'level' : 3, 'value' : 20}],
+    'life' : 10,
+    'mana' : 0,
+    'channeling' : 0,
+    'armor' : 2,
+    'experience' : 50,
+    'traits' : [['slow']],
+    'attacks' : [{
+        
+        'name' : 'paralysis beam',
+        'attack dice' : 2,
+        'traits' : [],
+        'effects' : [[['cripple'],7]],
+        'target type' : 'creature',
+        'range' : {'type' : 'ranged', 'distance' : 6},
+        'speed' : {'type' : 'full', 'turns' : 4}},{
+
+        'name' : 'bite',
+        'attack dice' : 4,
+        'traits' : [],
+        'effects' : [],
+        'target type' : 'creature',
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
+
+    'defense' : None,
+    'ai' : aidic.ai_dict['canine'],
+    'properties' : {
+        'name' : 'stonegaze basilisk',
+        'graphic' : 'B',
+        'color' : libtcod.dark_orange,
+        'level' : 3,
+        'subtypes' : ['reptile','lizard'],
         'description' : 'uh oh'}}

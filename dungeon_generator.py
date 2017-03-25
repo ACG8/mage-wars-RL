@@ -6,7 +6,6 @@ import map_classes as mpcl
 import random_generator_functions as rng
 import spell_functions as spfn
 import gui
-import foo_dictionary as fdic
 import monster_dictionary as mdic
 import item_dictionary as idic
 import equipment_dictionary as edic

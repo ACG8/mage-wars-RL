@@ -239,7 +239,7 @@ class Creature:
         rotted = False
         burned = False
         #regenerate
-        self.heal(data.max_value_from_list(self.owner.traits, 'regenerate'))
+        self.heal(data.max_value_from_list(self.owner.traits, 'regenerate '))
         for condition in self.conditions:
             if condition == 'rot':
                 self.take_damage(1)
@@ -247,12 +247,22 @@ class Creature:
                     gui.message (self.owner.name.capitalize() + ' rots.', libtcod.purple)
                     rotted = True
             if condition == 'burn':
-                #need to manage flavor text
-                burn_roll = libtcod_random_get_int(0,0,2)
+                burn_roll = libtcod.random_get_int(0,0,2)
                 if burn_roll == 0:
                     self.conditions.remove(condition)
+                    gui.message (self.owner.name.capitalize() + ' is burning less.', libtcod.purple)
                 else:
                     self.take_damage(burn_roll)
+                    gui.message (self.owner.name.capitalize() + ' burns.', libtcod.purple)
+                    burned = True
+            if condition in ['daze','stun','slam']:
+                self.conditions.remove(condition)
+                gui.message (self.owner.name.capitalize() + ' recovers from ' + condition + '!', libtcod.purple)
+
+        if self.defenses != []:
+            for defense in self.defenses:
+                if defense != None:
+                    defense.reset()
 
     def take_damage(self, damage):
         #apply damage if possible
@@ -276,35 +286,50 @@ class Creature:
         attack.declare_attack(self.owner, target, dice_bonus, 0)
 
     def try_to_move(self, x, y):
-
-        #this function works but takes too much time. How to optimize it?
-        
+        #first, check if stunned:
+        if not 'stun' in self.conditions:
         #this function makes the creature attempt to move toward the specified space. If it fails, it tries to attack or swap with whatever it finds there.
-        #if there is a hostile creature there, attack it.
-            #try to find an attackable object there
-        if defn.dungeon[x][y].objects:
-            for obj in defn.dungeon[x][y].objects:
-                if obj.creature and obj != self.owner:
-                    if obj.creature.alignment != self.alignment:
-                        #it's an enemy. attack it!
-                        self.attack(obj, self.active_attack)
-                        self.adjust_turn_counter(self.active_attack.speed['turns'])
-                        return 'attack'
-                    elif obj.creature.alignment == self.alignment and obj.properties['level'] < self.owner.properties['level']:
-                        #it's a friend. Swap places with it if it is of lower level.
-                        self.owner.swap_places(obj)
-                        return 'swap'
-        #nothing there, so let's move there. Ultimately, I need to consolidate the timing system, probably into this function.
-        self.owner.move_towards(x,y)
-        if self.owner == defn.player:
-            defn.fov_recompute = True
-            defn.player_location_changed = True
-        self.adjust_turn_counter(3)
-        if self.owner.traits:
-            if ['fast'] in self.owner.traits:
-                self.adjust_turn_counter(-1)
-            if ['slow'] in self.owner.traits:
-                self.adjust_turn_counter(1)
+            #if there is a hostile creature there, attack it.
+                #try to find an attackable object there
+            if defn.dungeon[x][y].objects:
+                for obj in defn.dungeon[x][y].objects:
+                    if obj.creature and obj != self.owner:
+                        if obj.creature.alignment != self.alignment:
+                            #it's an enemy. attack it!
+                            self.attack(obj, self.active_attack)
+                            self.adjust_turn_counter(self.active_attack.speed['turns'])
+                            return 'attack'
+                        elif obj.creature.alignment == self.alignment and obj.properties['level'] < self.owner.properties['level']:
+                            #it's a friend. Swap places with it if it is of lower level.
+                            self.owner.swap_places(obj)
+                            return 'swap'
+            #nothing there, so let's move there. Ultimately, I need to consolidate the timing system, probably into this function.
+            if not 'cripple' in self.conditions:
+                self.owner.move_towards(x,y)
+                if self.owner == defn.player:
+                    defn.fov_recompute = True
+                    defn.player_location_changed = True
+                self.adjust_turn_counter(3)
+                if self.owner.traits:
+                    if ['fast'] in self.owner.traits:
+                        self.adjust_turn_counter(-1)
+                    if ['slow'] in self.owner.traits:
+                        self.adjust_turn_counter(1)
+            else:
+                self.adjust_turn_counter(3)
+                cripple_message = False
+                for condition in self.conditions:
+                    if condition == 'cripple' and libtcod.random_get_int(0,1,12) >= 7:
+                        self.conditions.remove(condition)
+                        if cripple_message == False:
+                            gui.message (self.owner.name.capitalize() + ' is less crippled.', libtcod.orange)
+                            cripple_message = True
+        else:
+            #Remove stun and advance turn counter.
+            for condition in self.conditions:
+                if condition =='stun':
+                    self.conditions.remove(condition)
+            self.adjust_turn_counter(7)
         
     def heal(self, amount):
         #heal by the given amount, without going over the maximum
@@ -349,22 +374,6 @@ def get_adjacent_tiles(x,y):
                 adjacent_tiles.append(defn.dungeon[i][j])
 
     return adjacent_tiles
-    
-class ConfusedMonster:
-    #AI for a temporarily confused monster (reverts to previous after a while).
-    def __init__(self, old_ai, num_turns=defn.CONFUSE_NUM_TURNS):
-        self.old_ai = old_ai
-        self.num_turns = num_turns
- 
-    def take_turn(self):
-        if self.num_turns > 0:  #still confused...
-            #move in a random direction, and decrease the number of turns confused
-            self.owner.move(libtcod.random_get_int(0, -1, 1), libtcod.random_get_int(0, -1, 1))
-            self.num_turns -= 1
- 
-        else:  #restore the previous AI (this one will be deleted because it's not referenced anymore)
-            self.owner.ai = self.old_ai
-            gui.message('The ' + self.owner.name + ' is no longer confused!', libtcod.red)
 
 class Item:
     def __init__(self, use_function=None, parameters=None):
