@@ -19,7 +19,7 @@ class Attack:
         #to avoid the corpse-counterattack problem, check if target is attackable.
         if target.creature:
             if source.creature and 'daze' in source.creature.conditions and libtcod.random_get_int(0,1,12) < 7:
-                gui.message (source.name.capitalize() + ' is too dazed to attack!', libtcod.orange)
+                gui.message (source.title.capitalize() + ' is too dazed to attack!', libtcod.orange)
                 source.creature.adjust_turn_counter(3)
             else:
                 self.resolve_attack_roll(self.dice + dice_bonus, d12_bonus, source, target)
@@ -36,7 +36,7 @@ class Attack:
                         source.creature.conditions.remove(condition)
                         daze_removal = True
                 if daze_removal:
-                    gui.message (source.name.capitalize() + ' is dazed no longer!', libtcod.orange)
+                    gui.message (source.title.capitalize() + ' is dazed no longer!', libtcod.orange)
 
     def resolve_attack_roll(self, dice, d12_bonus, source, target):
 
@@ -59,7 +59,7 @@ class Attack:
                     if condition == 'daze':
                         def_bonus -= 2
                 if defense.use(def_bonus):
-                    gui.message (target.name.capitalize() + ' avoids ' + source.name + '\'s attack!', libtcod.red)
+                    gui.message (target.title.capitalize() + ' avoids ' + source.title + '\'s attack!', libtcod.red)
                     avoided = True
                     if defense.effect:
                         def_effect = defense.effect
@@ -108,15 +108,15 @@ class Attack:
 
             if damage > 0:
                 if not self.is_counterstrike:
-                    gui.message (source.name.capitalize() + ' attacks ' + target.name + ' with ' + self.name + '! ' + str(damage) + ' damage!', libtcod.red)
+                    gui.message (source.title.capitalize() + ' attacks ' + target.title + ' with ' + self.name + '! ' + str(damage) + ' damage!', libtcod.red)
                 else:
-                    gui.message (source.name.capitalize() + ' retaliates with ' + self.name + '! ' + str(damage) + ' damage!', libtcod.orange)
+                    gui.message (source.title.capitalize() + ' retaliates with ' + self.name + '! ' + str(damage) + ' damage!', libtcod.orange)
                 target.creature.take_damage(damage)
             else:
                 if not self.is_counterstrike:
-                    gui.message (source.name.capitalize() + ' attacks ' + target.name + ' with ' + self.name + '. No damage!', libtcod.red)
+                    gui.message (source.title.capitalize() + ' attacks ' + target.title + ' with ' + self.name + '. No damage!', libtcod.red)
                 else:
-                    gui.message (source.name.capitalize() + ' retaliates but fails to inflict any damage.', libtcod.orange)
+                    gui.message (source.title.capitalize() + ' retaliates but fails to inflict any damage.', libtcod.orange)
 
             roll = libtcod.random_get_int(0,1,12)
 
@@ -133,21 +133,21 @@ class Attack:
                 for effect in effects:
                     #poison immunity
                     if effect in ['rot', 'weak', 'cripple', 'tainted'] and ['poison immunity'] in target.traits:
-                        gui.message (target.name + ' resists the poison!', libtcod.purple)
+                        gui.message (target.title + ' resists the poison!', libtcod.purple)
                         break
                     #long term should probably define a class of conditions or something so I don't have to maintain a list of what constitutes a condition.
                     if effect in ['rot','weak','burn','cripple']:
-                        gui.message (source.name.capitalize() + ' inflicts ' + effect + ' on ' + target.name + '!', libtcod.purple)
+                        gui.message (source.title.capitalize() + ' inflicts ' + effect + ' on ' + target.title + '!', libtcod.purple)
                         target.creature.conditions.append(effect)
                     if effect == 'tainted':
-                        gui.message (source.name.capitalize() + 's\' attack taints ' + target.name + '!', libtcod.purple)
+                        gui.message (source.title.capitalize() + 's\' attack taints ' + target.title + '!', libtcod.purple)
                         target.creature.conditions.append('tainted')
                         target.creature.take_damage(3)
                     if effect == 'daze':
-                        gui.message (target.name + ' is dazed!', libtcod.purple)
+                        gui.message (target.title + ' is dazed!', libtcod.purple)
                         target.creature.conditions.append('daze')
                     if effect == 'stun':
-                        gui.message (target.name + ' is stunned!', libtcod.purple)
+                        gui.message (target.title + ' is stunned!', libtcod.purple)
                         target.creature.conditions.append('stun')
 
             #resolve counterstrikes. currently just takes the first counterstriking attack it finds.
@@ -209,28 +209,3 @@ def get_attack(dictionary):
             speed = dictionary['speed'])
         return attack
     return None
-
-attk_dict = {}
-
-#note: effects should be listed in ascending order
-#creature attacks
-
-#attk_dict['basic melee attack'] = {
- #   'name' : 'basic melee attack',
-  #  'attack dice' : 3,
-   # 'traits' : [],
-    #'effects' : [],
-#    'target type' : 'creature',
- #   'range' : {'type' : 'melee', 'distance' : 1},
-  #  'speed' : {'type' : 'quick', 'turns' : 2}}
-
-#spell attacks
-
-#attk_dict['lightning bolt'] = {
- #   'name' : 'lightning bolt',
-  #  'attack dice' : 5,
-   # 'traits' : [['lightning'],['ethereal']],
-    #'effects' : [[['daze'],6],[['stun'],8]],
-#    'target type' : 'creature',
- #   'range' : {'type' : 'melee', 'distance' : 1},
-  #  'speed' : {'type' : 'quick', 'turns' : 1}}

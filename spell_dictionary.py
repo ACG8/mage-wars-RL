@@ -1,4 +1,3 @@
-import spell_classes as spcl
 import attack_dictionary as adic
 import spell_functions as spfn
 import definitions as defn
@@ -56,7 +55,7 @@ def reanimation_spell(parameters, source=None, target=None):
         if x:
             for obj in defn.dungeon[x][y].objects:
                 if obj.corpse:
-                    monster = mdic.get_monster(obj.corpse.name, x,y)
+                    monster = mdic.get_monster(obj.corpse.properties['name'], x,y)
                     if ['nonliving'] in monster.traits:
                         return 'cancelled'
                     ##this will lead to an eventual error when corpses are stacked, if the top corpse is nonliving then the rest cannot be reanimated. I'll fix this later.

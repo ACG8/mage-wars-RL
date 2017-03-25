@@ -20,14 +20,14 @@ class Object:
                  creature=None, ai=None, item=None, equipment=None,
                  traits=[], properties = {}):
         self.always_visible = always_visible
-        self.personal_name = None
+        self.name = None
         self.blocks = blocks
         self.x = x
         self.y = y
         self.base_traits = traits
         self.properties = properties
         self.corpse = None
-
+        
         self.enchantments = []
 
         self.creature = creature
@@ -50,14 +50,6 @@ class Object:
             self.item.owner = self
 
     @property
-    def name(self):
-        if self.personal_name:
-            return self.personal_name
-        else:
-            return self.properties['name']
-        
-
-    @property
     def is_visible(self):
         return (libtcod.map_is_in_fov(defn.fov_map, self.x, self.y) or self.always_visible)
 
@@ -76,6 +68,15 @@ class Object:
         traits = self.base_traits + bonus_traits
                     
         return traits
+
+    @property
+    def title(self):
+        string = self.properties['name'].capitalize()
+        if self.creature and 'zombie' in self.creature.conditions:
+            string = 'Zombie ' + string
+        if self.name != None:
+            string = self.name.capitalize()
+        return string
 
     def describe(self):
         #render the screen. this erases the inventory and shows the names of objects under the mouse.
@@ -118,8 +119,11 @@ class Object:
             libtcod.console_put_char(defn.con, self.x, self.y, self.properties['graphic'], libtcod.BKGND_NONE)
             
     def clear(self):
-        #erase the character that represents this object
-        libtcod.console_put_char(defn.con, self.x, self.y, ' ', libtcod.BKGND_NONE)
+        #erase the character that represents this object and replace it with the appropriate background character.
+        #libtcod.console_put_char(defn.con, self.x, self.y, ' ', libtcod.BKGND_NONE)
+        #Now
+        libtcod.console_set_default_foreground(defn.con, libtcod.black)
+        libtcod.console_put_char(defn.con, self.x, self.y, defn.dungeon[self.x][self.y].graphic, libtcod.BKGND_NONE)
 
     def move_towards(self, target_x, target_y):
         #vector from this object to the target, and distance
@@ -254,20 +258,20 @@ class Creature:
             if condition == 'rot':
                 self.take_damage(1)
                 if not rotted:
-                    gui.message (self.owner.name.capitalize() + ' rots.', libtcod.purple)
+                    gui.message (self.owner.title.capitalize() + ' rots.', libtcod.purple)
                     rotted = True
             if condition == 'burn':
                 burn_roll = libtcod.random_get_int(0,0,2)
                 if burn_roll == 0:
                     self.conditions.remove(condition)
-                    gui.message (self.owner.name.capitalize() + ' is burning less.', libtcod.purple)
+                    gui.message (self.owner.title.capitalize() + ' is burning less.', libtcod.purple)
                 else:
                     self.take_damage(burn_roll)
-                    gui.message (self.owner.name.capitalize() + ' burns.', libtcod.purple)
+                    gui.message (self.owner.title.capitalize() + ' burns.', libtcod.purple)
                     burned = True
             if condition in ['daze','stun','slam']:
                 self.conditions.remove(condition)
-                gui.message (self.owner.name.capitalize() + ' recovers from ' + condition + '!', libtcod.purple)
+                gui.message (self.owner.title.capitalize() + ' recovers from ' + condition + '!', libtcod.purple)
 
         if self.defenses != []:
             for defense in self.defenses:
@@ -309,8 +313,8 @@ class Creature:
                             self.attack(obj, self.active_attack)
                             self.adjust_turn_counter(self.active_attack.speed['turns'])
                             return 'attack'
-                        elif obj.creature.alignment == self.alignment and obj.properties['level'] < self.owner.properties['level']:
-                            #it's a friend. Swap places with it if it is of lower level.
+                        elif obj.creature.alignment == self.alignment and (obj.properties['level'] < self.owner.properties['level'] or self.owner == defn.player):
+                            #it's a friend. Swap places with it if it is of lower level or you are the player.
                             self.owner.swap_places(obj)
                             return 'swap'
             #nothing there, so let's move there. Ultimately, I need to consolidate the timing system, probably into this function.
@@ -327,13 +331,13 @@ class Creature:
                         self.adjust_turn_counter(1)
             else:
                 self.adjust_turn_counter(3)
-                gui.message (self.owner.name.capitalize() + ' attempts to move but is too crippled!', libtcod.orange)
+                gui.message (self.owner.title.capitalize() + ' attempts to move but is too crippled!', libtcod.orange)
                 cripple_message = False
                 for condition in self.conditions:
                     if condition == 'cripple' and libtcod.random_get_int(0,1,12) >= 7:
                         self.conditions.remove(condition)
                         if cripple_message == False:
-                            gui.message (self.owner.name.capitalize() + ' is less crippled.', libtcod.orange)
+                            gui.message (self.owner.title.capitalize() + ' is less crippled.', libtcod.orange)
                             cripple_message = True
         else:
             #Remove stun and advance turn counter.
@@ -357,7 +361,7 @@ class Creature:
             self.hp = effective_max_life
 
         if self.hp > hp_before and self.owner.is_visible:
-            gui.message (self.owner.name.capitalize() + ' heals ' + str(self.hp - hp_before) + ' damage!', libtcod.turquoise)
+            gui.message (self.owner.title.capitalize() + ' heals ' + str(self.hp - hp_before) + ' damage!', libtcod.turquoise)
 
     def spend_mana(self, cost):
         #spend mana if possible.
@@ -394,13 +398,13 @@ class Item:
     def pick_up(self):
         #add to the player's inventory and remove from the map
         if len(defn.inventory) >= 26:
-            gui.message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
+            gui.message('Your inventory is full, cannot pick up ' + self.owner.title + '.', libtcod.red)
             return 'cancelled'
         else:
             defn.inventory.append(self.owner)
             defn.dungeon[self.owner.x][self.owner.y].objects.remove(self.owner)
             defn.objects.remove(self.owner)
-            gui.message('You picked up a ' + self.owner.name + '!', libtcod.green)
+            gui.message('You picked up a ' + self.owner.title + '!', libtcod.green)
             #special case: automatically equip, if the corresponding equipment slot is unused
             equipment = self.owner.equipment
             if equipment and edic.get_equipped_in_slot(defn.player, equipment.slot) is None:
@@ -430,7 +434,7 @@ class Item:
         #special case: if the object has the Equipment component, dequip it before dropping
         if self.owner.equipment:
             self.owner.equipment.dequip()
-        gui.message('You dropped a ' + self.owner.name + '.', libtcod.yellow)
+        gui.message('You dropped a ' + self.owner.title + '.', libtcod.yellow)
 
 class Equipment:
     #an object that can be equipped, yielding bonuses. automatically adds the Item component.
@@ -454,13 +458,13 @@ class Equipment:
         if old_equipment is not None:
             old_equipment.dequip()
         self.is_equipped = True
-        gui.message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
+        gui.message('Equipped ' + self.owner.title + ' on ' + self.slot + '.', libtcod.light_green)
  
     def dequip(self):
         #dequip object and show a message about it
         if not self.is_equipped: return
         self.is_equipped = False
-        gui.message('Removed ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
+        gui.message('Removed ' + self.owner.title + ' from ' + self.slot + '.', libtcod.light_yellow)
 
 #####Note: I need to eventually move these or integrate them into the creature function
 
@@ -477,7 +481,7 @@ def monster_death(monster):
     #transform it into a nasty corpse! it doesn't block, can't be
     #attacked and doesn't move
     #error - the change appears to affect all such dictionaries
-    gui.message('The ' + monster.name + ' gurgles as its life-blood spills upon the sands!', libtcod.orange)
+    gui.message('The ' + monster.title + ' dies!', libtcod.orange)
     if 'zombie' in monster.creature.conditions:
         #obliterate it
         defn.objects.remove(monster)
@@ -490,6 +494,7 @@ def monster_death(monster):
         monster.blocks = False
         monster.creature = None
         monster.ai = None
-        monster.properties['name'] = 'remains of ' + monster.name
+        monster.properties['name'] = 'remains of ' + monster.title
+        monster.properties['description'] = 'A corpse. Don\'t worry, it seems harmless enough'
         monster.send_to_back()
 

@@ -8,6 +8,7 @@ class Tile:
         self.y = y
         self.name = name
         self.color = color
+        self.graphic = ' '
         self.blocked = blocked
         self.explored = False
         self.scent = 0

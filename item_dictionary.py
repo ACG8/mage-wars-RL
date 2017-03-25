@@ -1,6 +1,5 @@
 import map_functions as mpfn
 import object_classes as obcl
-import action_classes as accl
 import libtcodpy as libtcod
 import spell_functions as spfn
 import spell_dictionary as sdic

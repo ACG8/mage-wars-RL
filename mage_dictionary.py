@@ -60,7 +60,8 @@ def create_player(mage, x, y):
             'graphic' : '@',
             'color' : libtcod.white,
             'level' : 1,
-            'subtypes' : None},
+            'subtypes' : None,
+            'description' : 'This is you. If you die, the game is over.'},
         blocks=True,
         creature=creature_component)
 
@@ -69,6 +70,7 @@ def create_player(mage, x, y):
     
     defn.training = mage['training']
     defn.antitraining = mage['antitraining']
+    defn.player.creatures = [] #might change to allow some mages to start with a pet
 
     for spell in mage['spells']:
         new_spell = sdic.get_spell(spell)

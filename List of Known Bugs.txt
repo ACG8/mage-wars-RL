@@ -12,3 +12,6 @@ When a corpse dies, its remains can burn. Should probably remove all conditions 
 Zone attack area highlighting persists after the attack has been made. Probably a problem with the targeting function.
 
 Selecting a spell and then cancelling takes 1 time unit
+
+CRITICAL BUGS
+- When a summoned monster dies, the game crashes due to it not being on the list of objects.

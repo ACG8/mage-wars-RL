@@ -10,89 +10,50 @@ import monster_dictionary as mdic
 import item_dictionary as idic
 import equipment_dictionary as edic
 import dijkstra as djks
-            
+import map_generator as mgen
+import map_populator as mpop
+from random import *
+
 def make_map():
- 
-    #the list of objects with just the player
+    #add the player to the list of objects
     defn.objects = [defn.player]
- 
-    #fill map with "blocked" tiles
+
+    #create a blank dungeon
     defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.grey, True)
         for y in range(defn.MAP_HEIGHT) ]
             for x in range(defn.MAP_WIDTH) ]
-    
-    rooms = []
-    num_rooms = 0
 
-    #carve rooms out of the map
-    for r in range(defn.MAX_ROOMS):
-        #random width and height
-        w = libtcod.random_get_int(0, defn.ROOM_MIN_SIZE, defn.ROOM_MAX_SIZE)
-        h = libtcod.random_get_int(0, defn.ROOM_MIN_SIZE, defn.ROOM_MAX_SIZE)
-        #random position without going outside the map
-        x = libtcod.random_get_int(0, 0, defn.MAP_WIDTH - w - 1)
-        y = libtcod.random_get_int(0, 0, defn.MAP_HEIGHT - h - 1)
+    #generate a dungeon map and print it to the dungeon
+    level = mgen.dMap()
+    level.makeMap(defn.MAP_WIDTH,defn.MAP_HEIGHT,110,20,60)
 
-        #define new room as a rectangle
-        new_room = mpcl.Rect(x, y, w, h)
- 
-        #check that none of the other rooms intersect with this one.
-        failed = False
-        for other_room in rooms:
-            if new_room.intersect(other_room):
-                failed = True
-                break
-            
-        #if there are no intersections, then proceed.
-        if not failed:
-            #"paint" it to the map's tiles
-            mpfn.create_room(new_room)
+    for y in range(defn.MAP_HEIGHT):
+        for x in range(defn.MAP_WIDTH):
+            print_tile(level,[x,y])
 
-            #get center coordinates of new room
-            (new_x, new_y) = new_room.center()
- 
-            if num_rooms == 0:
-                #this is the first room, where the player starts
-                defn.player.x = new_x
-                defn.player.y = new_y
-                defn.dungeon[defn.player.x][defn.player.y].objects.append(defn.player)
+    #populate each room
+    for room in level.roomList:
+        generate_encounters(room)
 
-            else:
-                #all rooms after the first:
-                #connect it to the previous room with a tunnel
-                
-                #center coordinates of previous room
-                (prev_x, prev_y) = rooms[num_rooms - 1].center()
-
-                #flip a coin
-                if libtcod.random_get_int(0, 0, 1) == 1:
-                    #first move horizontally, then vertically
-                    mpfn.create_h_tunnel(prev_x, new_x, prev_y)
-                    mpfn.create_v_tunnel(prev_y, new_y, new_x)
-                else:
-                    #first move vertically, then horizontally
-                    mpfn.create_v_tunnel(prev_y, new_y, prev_x)
-                    mpfn.create_h_tunnel(prev_x, new_x, new_y)
-
-                                
-            #populate the room with objects
-            place_objects(new_room)
-            
-            #finally, append the new room to the list
-            rooms.append(new_room)
-            num_rooms += 1
+    #send all items to the back
+    for obj in defn.objects:
+        if obj.item:
+            obj.send_to_back()
 
     #create stairs at the center of the last room
-    defn.stairs = obcl.Object(new_x, new_y,
+    defn.stairs = obcl.Object(0, 0,
         always_visible=True,
         properties = {
             'name' : 'portal',
             'graphic' : '<',
             'color' : libtcod.white,
             'description' : 'portal to the next level'})
-    defn.objects.append(defn.stairs)
-    defn.dungeon[defn.stairs.x][defn.stairs.y].objects.append(defn.stairs)
-    defn.stairs.send_to_back()  #so it's drawn below the monsters
+    mpop.place_randomly(defn.stairs)
+    defn.stairs.send_to_back()
+
+    #place the player
+
+    mpop.place_randomly(defn.player)
 
     #clear list of dungeon tiles
 
@@ -107,71 +68,102 @@ def make_map():
             if not tile.blocked:
                 defn.dungeon_unblocked_list.append(tile)
 
-#populate each new room with objects
+#Populate a room
+def generate_encounters(room):
 
-def place_objects(room):
-
-    #choose random number of monsters
+    #MONSTERS (60% chance of appearing)
     max_room_monsters = mpfn.from_dungeon_level([
-        {'level' : 1, 'value' : 1},
-        {'level' : 3, 'value' : 2}])
-    num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
-    for i in range(num_monsters):
-        #choose random spot for this monster
-        x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
-        y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
-        #only place it if the tile is not blocked
-        if not mpfn.is_blocked(x, y):
-            #choose a random monster from the dictionary
-            arg = rng.random_choice(mdic.mons_dict)
-            monster = mdic.get_monster(arg['properties']['name'],x,y)
-            #add new monster to the game
-            defn.objects.append(monster)
-            defn.dungeon[x][y].objects.append(monster)
-
+                {'level' : 1, 'value' : 1},
+                {'level' : 2, 'value' : 3},
+                {'level' : 3, 'value' : 5}])
     max_room_equipment = mpfn.from_dungeon_level([
-        {'level' : 1, 'value' : 1},
-        {'level' : 3, 'value' : 2}])
-
-    #choose random number of equipment items
-    num_equipment = libtcod.random_get_int(0, 0, max_room_equipment)
- 
-    for i in range(num_equipment):
-        #choose random spot for this item
-        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
-        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
- 
-        #only place it if the tile is not blocked
-        if not mpfn.is_blocked(x, y):
-            arg = rng.random_choice(edic.equip_dict)
-            equipment = edic.get_equipment(arg['properties']['name'],x,y)
-            equipment.always_visible = True
-
-            defn.objects.append(equipment)
-            equipment.send_to_back()
-            defn.dungeon[x][y].objects.append(equipment)
-
+            {'level' : 1, 'value' : 1},
+            {'level' : 3, 'value' : 2}])
     max_room_items = mpfn.from_dungeon_level([
-        {'level' : 1, 'value' : 1},
-        {'level' : 3, 'value' : 2}])
+            {'level' : 1, 'value' : 1},
+            {'level' : 3, 'value' : 2}])
+    
+    if randrange(100)<20:
+        
+        
+        #choose random number of equipments
+        num_equipment = libtcod.random_get_int(0, 0, max_room_equipment)
+        equipments = []
+        for i in range(num_equipment):
+            arg = rng.random_choice(edic.equip_dict)
+            equipment = edic.get_equipment(arg['properties']['name'],0,0)
+            equipment.always_visible = True
+            equipments.append(equipment)
+        mpop.populate_room(equipments,room)
 
-    #choose random number of equipment items
-    num_items = libtcod.random_get_int(0, 0, max_room_equipment)
- 
-    for i in range(num_items):
-        #choose random spot for this item
-        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
-        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
- 
-        #only place it if the tile is not blocked
-        if not mpfn.is_blocked(x, y):
+    #ITEMS (40% chance of appearing)
+    if randrange(100)<40:
+        
+
+        #choose random number of items
+        num_items = libtcod.random_get_int(0, 0, max_room_equipment)
+        items = []
+        for i in range(num_items):
             arg = rng.random_choice(idic.item_dict)
-            item = idic.get_item(arg['properties']['name'],x,y)
+            item = idic.get_item(arg['properties']['name'],0,0)
             item.always_visible = True
+            items.append(item)
+        mpop.populate_room(items,room)
 
-            defn.objects.append(item)
-            item.send_to_back()
-            defn.dungeon[x][y].objects.append(item)   
+        #MONSTERS
+    
+    if randrange(100)<60:
+        
+        num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
+        #later, can define specific hordes of monster. For now, just generate randomly
+        monsters = []
+        for i in range(num_monsters):
+            arg = rng.random_choice(mdic.mons_dict)
+            monster = mdic.get_monster(arg['properties']['name'],0,0)
+            monsters.append(monster)
+        mpop.populate_room(monsters,room)
+
+    #EQUIPMENT (20% chance of appearing
+
+#Define a mapping between a dMap and the dungeon map
+def print_tile(dMap,x):
+    x0 = x[0]
+    x1 = x[1]
+    value = dMap.mapArr[x1][x0]
+    if value==0: #dirt floor
+        defn.dungeon[x0][x1].blocked = False
+        defn.dungeon[x0][x1].block_sight = False
+        defn.dungeon[x0][x1].name = 'floor'
+        defn.dungeon[x0][x1].color = libtcod.sepia
+        defn.dungeon[x0][x1].graphic = '.'
+        
+    if value==1 or value == 2: #wall
+        defn.dungeon[x0][x1].blocked = True
+        defn.dungeon[x0][x1].block_sight = True
+        defn.dungeon[x0][x1].name = 'wall'
+        defn.dungeon[x0][x1].color = libtcod.grey
+        defn.dungeon[x0][x1].graphic = ' '
+        
+    if value==3 or value == 4 or value == 5: #door
+        defn.dungeon[x0][x1].blocked = False
+        defn.dungeon[x0][x1].block_sight = True
+        defn.dungeon[x0][x1].name = 'door'
+        defn.dungeon[x0][x1].color = libtcod.blue
+        defn.dungeon[x0][x1].graphic = '+'
+
+    if value==6: #grass floor
+        defn.dungeon[x0][x1].blocked = False
+        defn.dungeon[x0][x1].block_sight = False
+        defn.dungeon[x0][x1].name = 'grass floor'
+        defn.dungeon[x0][x1].color = libtcod.darkest_green
+        defn.dungeon[x0][x1].graphic = '\"'
+
+    if value==7: #window
+        defn.dungeon[x0][x1].blocked = True
+        defn.dungeon[x0][x1].block_sight = False
+        defn.dungeon[x0][x1].name = 'window'
+        defn.dungeon[x0][x1].color = libtcod.light_sepia
+        defn.dungeon[x0][x1].graphic = '#'
 
 #advance to the next level
 def next_level():
@@ -179,6 +171,11 @@ def next_level():
     #heal the player by 50%
     defn.player.creature.conditions = []
     defn.player.creature.heal(defn.player.creature.max_hp)
+    #store all friendly creatures
+    for obj in defn.objects:
+        if obj.creature and obj != defn.player and not obj in defn.player.creatures:
+            if obj.creature.alignment == 'player':
+                defn.player.creatures.append(obj)
     #increment the dungeon level
     defn.dungeon_level += 1
     #generate a new map

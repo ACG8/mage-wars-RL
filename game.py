@@ -2,7 +2,6 @@ import definitions as defn
 import libtcodpy as libtcod
 import object_classes as obcl
 import map_functions as mpfn
-import inventory_functions as infn
 import math
 import textwrap
 import shelve
@@ -40,8 +39,12 @@ def render_all():
                     if defn.dungeon[x][y].explored:
                     #it's out of the player's FOV
                         libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color*libtcod.grey, libtcod.BKGND_SET)
+                        libtcod.console_set_default_foreground(defn.con, libtcod.black)
+                        libtcod.console_put_char(defn.con, x, y, defn.dungeon[x][y].graphic, libtcod.BKGND_NONE)
                 else:
                     libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
+                    libtcod.console_set_default_foreground(defn.con, libtcod.black)
+                    libtcod.console_put_char(defn.con, x, y, defn.dungeon[x][y].graphic, libtcod.BKGND_NONE)
                     #it's visible
                     defn.dungeon[x][y].explored = True
     

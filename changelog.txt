@@ -1,0 +1,11 @@
+Changes in v.0.13.1:
+Features
+- New dungeon generator
+- Doors (blocks sight), grass, and fences (blocks movement)
+- Can use 'x' to click on object for information
+- Added Firebrand Imp
+- Can now summon allies from previous levels
+Bugfixes
+- Fixed name display bug
+- Fixed bug where items were displayed on top layer
+- Fixed bug where monsters erased terrain characters in their trail

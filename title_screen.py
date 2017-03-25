@@ -2,14 +2,12 @@ import definitions as defn
 import libtcodpy as libtcod
 import object_classes as obcl
 import map_functions as mpfn
-import inventory_functions as infn
 import gui
 import dungeon_generator as dgen
 import random
 import spell_functions as spfn
 import game
 import shelve
-import spell_classes as spcl
 import spell_dictionary as sdic
 import monster_dictionary as mdic
 import equipment_dictionary as edic

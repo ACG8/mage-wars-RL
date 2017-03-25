@@ -1,16 +1,14 @@
 import libtcodpy as libtcod
 import definitions as defn
-import inventory_functions as infn
 import gui
 import dungeon_generator as dgen
-import action_classes as accl
 import attack_dictionary as adic
 import spell_functions as spfn
-import spell_classes as spcl
 import game
 import data_methods as data
 import dijkstra as djks
 import item_dictionary as idic
+import map_populator as mpop
 
 def inventory_menu(header):
     #show a menu with each item of the inventory as an option
@@ -30,6 +28,23 @@ def inventory_menu(header):
     #if an item was chosen, return it
     if index is None or len(defn.inventory) == 0: return None
     return defn.inventory[index].item
+
+def summoning_menu(header):
+    #show a menu with each creature as an option
+    if len(defn.inventory) == 0:
+        options = ['No allies to summon.']
+    else:
+        options = []
+        for obj in defn.player.creatures:
+            text = obj.title
+            #show additional information, in case it's equipped
+            options.append(text)
+ 
+    index = gui.menu(header, options, defn.INVENTORY_WIDTH)
+
+    #if an item was chosen, return it
+    if index is None or len(defn.player.creatures) == 0: return None
+    return defn.player.creatures[index]
 
 def spellbook_menu(header):
     spellbook = defn.player.spellbook
@@ -213,13 +228,15 @@ def handle_keys():
                            '\n\nI = examine an item in your inventory' +
                            '\nZ = examine a spell in your spellbook' +
                            '\nc = access information about your character' +
+                           '\nx = get information on a nearby object' +
 
                            '\n\nThe following keys may be used to interact with your environment:' +
                            
-                           '\n\n, = pick up item from current position' +
+                           '\n\nCOMMA = pick up item from current position' +
                            '\ni = use an item from your inventory'+
                            '\nd = drop an item from your inventory' +
                            '\nz = choose a spell from your spellbook to cast' +
+                           '\ns = summon an ally from a previous level' +
                            
                            '\n\nTo avoid tedious repetition, you can automate certain tasks:' +
                            '\n\n< = travel to the nearest portal and pass through' +
@@ -262,6 +279,7 @@ def handle_keys():
                 chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
                 if chosen_item is not None:
                     chosen_item.drop()
+                    chosen_item.owner.send_to_back()
                     return
                 
                 chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
@@ -333,6 +351,105 @@ def handle_keys():
                     '\n\nTraits:' + traits +
                     '\n\nConditions' + conditions
                     ,defn.CHARACTER_SCREEN_WIDTH)
+
+            if key_char == 'x':
+                #first, select a target object
+                target = None
+                gui.message('Click on the object you would like to know more about, or right click to cancel.', libtcod.white)
+                rangemap = defn.fov_map
+                while True:
+                    #render the screen. this erases the inventory and shows the names of objects under the mouse.
+                    libtcod.console_flush()
+                    libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
+                    game.render_all()
+ 
+                    (x, y) = (defn.mouse.cx, defn.mouse.cy)
+                    
+                    if defn.mouse.lbutton_pressed and libtcod.map_is_in_fov(defn.fov_map, x, y):
+                        for j in range(defn.MAP_HEIGHT):
+                            for i in range(defn.MAP_WIDTH):
+                                if libtcod.map_is_in_fov(rangemap, i, j):
+                                    libtcod.console_set_char_background(defn.con, i, j, defn.dungeon[i][j].color, libtcod.BKGND_SET)
+                        break
+                    
+                    if defn.mouse.rbutton_pressed or defn.key.vk == libtcod.KEY_ESCAPE:
+                        for j in range(defn.MAP_HEIGHT):
+                            for i in range(defn.MAP_WIDTH):
+                                if libtcod.map_is_in_fov(rangemap, i, j):
+                                    libtcod.console_set_char_background(defn.con, i, j, defn.dungeon[i][j].color, libtcod.BKGND_SET)
+                        break
+                if x != None:
+                    for obj in defn.dungeon[x][y].objects:
+                        target = obj
+                        #describe the target more fully if it is a creature
+                        if target.creature:
+                            traits_inc = []
+                            appended_traits = []
+                            for trait in target.traits:
+                                if trait[0] not in appended_traits:
+                                    if len(trait) == 2:
+                                        if trait[0][-1:]=='+': #sum them
+                                            trait_inc = [trait[0], data.sum_values_from_list(target.traits,trait[0])]
+                                        else: #find max
+                                            trait_inc = [trait[0], data.max_value_from_list(target.traits,trait[0])]
+                                        traits_inc.append(trait_inc)
+                                        appended_traits.append(trait_inc[0])
+                                    else:
+                                        traits_inc.append(trait)
+                                        appended_traits.append(trait)
+                            traits = ''
+                            
+                            for trait in traits_inc:
+                                if len(trait) == 1:
+                                    traits += '\n   ' + trait[0].capitalize()
+                                else:
+                                    traits += '\n   ' + trait[0].capitalize() + str(trait[1])
+
+                            #next, compute conditions
+
+                            conditions_inc = []
+                            appended_conditions = []
+                            for condition in target.creature.conditions:
+                                if condition not in appended_conditions:
+                                    conditions_inc.append([condition,data.count_instances_in_list(target.creature.conditions,condition)])
+                                    appended_conditions.append(condition)
+
+                            conditions = ''
+
+                            for condition in conditions_inc:
+                                conditions += '\n   ' + condition[0].capitalize() + ' (' + str(condition[1]) + ')'
+
+                            title = target.title.capitalize()
+                            if target.title == target.name:
+                                title = title + ', ' + target.properties['name']
+                            #now describe the creature
+                            gui.msgbox(title +
+                            '\n\nLevel: ' + str(target.properties['level']) +
+                            '\n\nAttack: ' + str(target.creature.active_attack.name.capitalize()) +
+                            '\n\nTraits:' + traits +
+                            '\n\nConditions:' + conditions +
+                            '\n\n' + target.properties['description']
+                            ,defn.CHARACTER_SCREEN_WIDTH)
+                                        
+                        else:
+                            target.describe()
+                        break
+                        
+                        #later, can add menu in case of multiple objects
+            if key_char == 's':
+                #summon an ally
+                creature = summoning_menu('Press the key next to a creature to select it, or any other to cancel.\n')
+                if creature != None:
+                    gui.message('Left-click on an open tile to summon creature there, or right-click to cancel.', libtcod.light_cyan)
+                    x0,x1 = spfn.target_tile(3)
+                    if mpop.place_object(creature,[x0,x1]) != 'failed':
+                        defn.player.creatures.remove(creature)
+                    else:
+                        gui.message('There\'s something in the way...', libtcod.light_cyan)
+                    
+                    
+                
+                        
 
             #if key_char == 'w':
                 #defn.player.creature.heal(30)

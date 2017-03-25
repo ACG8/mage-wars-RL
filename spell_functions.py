@@ -2,12 +2,9 @@ import definitions as defn
 import libtcodpy as libtcod
 import object_classes as obcl
 import map_functions as mpfn
-import inventory_functions as infn
 import gui
 import attack_dictionary as adic
-import action_classes as accl
 import game
-import spell_classes as spcl
 import spell_dictionary as sdic
 import time
 
@@ -19,10 +16,7 @@ def target_monster(max_range=None):
         
     rangemap = defn.fov_map
     libtcod.map_compute_fov(rangemap, defn.player.x, defn.player.y, max_range, defn.FOV_LIGHT_WALLS, defn.FOV_ALGO)
-    #for y in range(defn.MAP_HEIGHT):
-     #   for x in range(defn.MAP_WIDTH):
-      #      if libtcod.map_is_in_fov(rangemap, x, y):
-       #         libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color * libtcod.lightest_green, libtcod.BKGND_SET)
+    
     #returns a clicked monster inside FOV up to a range, or None if right-clicked
     while True:
 

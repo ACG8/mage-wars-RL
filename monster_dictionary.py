@@ -1,10 +1,8 @@
 import map_functions as mpfn
 import object_classes as obcl
-import action_classes as accl
 import libtcodpy as libtcod
 import ai_dictionary as aidic
 import attack_dictionary as adic
-import ai_dictionary as aidic
 
 #############################################################
 # MONSTER DICTIONARY                                        #
@@ -17,8 +15,8 @@ import ai_dictionary as aidic
 # 1: Monster Creation Function #
 ################################
 
-def get_monster(name, x, y):
-    arg = mons_dict[name]
+def get_monster(title, x, y):
+    arg = mons_dict[title]
 
     #get monster's attacks
     
@@ -91,7 +89,7 @@ mons_dict['goblin grunt'] = {
         'subtypes' : ['goblin', 'soldier'],
         'description' : 'The frontline troops of the Warlord are determined and enthusiastic, but easily killed with the first hit.'}}
 
-mons_dict['zombie crawler'] = {
+mons_dict['goblin grunt'] = {
     'spawn chance' : [
         {'level' : 1, 'value' : 40},
         {'level' : 2, 'value' : 10}],
@@ -100,11 +98,11 @@ mons_dict['zombie crawler'] = {
     'channeling' : 0,
     'armor' : 0,
     'experience' : 20,
-    'traits' : [['bloodthirsty +', 1],['slow'],['pest'],['resilient'],['psychic immunity'],['nonliving']],#,['poison immunity']],
+    'traits' : [],
     'attacks' : [{
         
-        'name' : 'bite',
-        'attack dice' : 2,
+        'name' : 'shortsword',
+        'attack dice' : 3,
         'traits' : [],
         'effects' : [],
         'target type' : 'creature',
@@ -112,14 +110,45 @@ mons_dict['zombie crawler'] = {
         'speed' : {'type' : 'quick', 'turns' : 2}}],
     
     'defense' : None,
-    'ai' : aidic.ai_dict['zombie'],
+    'ai' : aidic.ai_dict['canine'],
     'properties' : {
-        'name' : 'zombie crawler',
-        'graphic' : 'z',
+        'name' : 'goblin grunt',
+        'graphic' : 'g',
         'color' : libtcod.light_red,
         'level' : 1,
-        'subtypes' : ['undead','zombie'],
-        'description' : 'Watch where you step! Those half-corpses are still alive!'}}
+        'subtypes' : ['goblin', 'soldier'],
+        'description' : 'The frontline troops of the Warlord are determined and enthusiastic, but easily killed with the first hit.'}}
+
+mons_dict['firebrand imp'] = {
+    'spawn chance' : [
+        {'level' : 1, 'value' : 10},
+        {'level' : 2, 'value' : 40},
+        {'level' : 3, 'value' : 20},],
+    'life' : 6,
+    'mana' : 0,
+    'channeling' : 0,
+    'armor' : 0,
+    'experience' : 40,
+    'traits' : [['flame immunity']],
+    'attacks' : [{
+        
+        'name' : 'hellfire claws',
+        'attack dice' : 2,
+        'traits' : [['flame'],['defrost']],
+        'effects' : [[['burn'],8]],
+        'target type' : 'creature',
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
+    
+    'defense' : None,
+    'ai' : aidic.ai_dict['canine'],
+    'properties' : {
+        'name' : 'firebrand imp',
+        'graphic' : 'i',
+        'color' : libtcod.light_red,
+        'level' : 1,
+        'subtypes' : ['demon'],
+        'description' : '...and there, silhouetted against the flames of the burning bodies, was the Firebrand Imp that had killed my men.\n  -Captain Klendel of Lonewall Keep'}}
 
 mons_dict['bitterwood fox'] = {
     'spawn chance' : [
@@ -150,7 +179,7 @@ mons_dict['bitterwood fox'] = {
         'color' : libtcod.light_red,
         'level' : 1,
         'subtypes' : ['animal', 'canine'],
-        'description' : 'foo'}}
+        'description' : '\"Their meat is gamey and their teeth are sharp. It\'s best just to avoid them.\"\n  -Quelesta, Elven Ranger'}}
 
 mons_dict['emerald tegu'] = {
     'spawn chance' : [
@@ -180,7 +209,7 @@ mons_dict['emerald tegu'] = {
         'color' : libtcod.dark_chartreuse,
         'level' : 2,
         'subtypes' : ['animal', 'reptile'],
-        'description' : 'foo'}}
+        'description' : '\"Our spears snapped, as if twigs, against its hide. And when Dayel turned purple and choked on his own tongue, I knew its bite was poison.\"\n-Telgrin, Knight of Westlock'}}
 
 mons_dict['death\'s head scorpion'] = {
     'spawn chance' : [
@@ -256,7 +285,7 @@ mons_dict['darkfenne hydra'] = {
         'color' : libtcod.dark_red,
         'level' : 4,
         'subtypes' : ['serpent'],
-        'description' : 'uh oh'}}
+        'description' : ''}}
 
 mons_dict['stonegaze basilisk'] = {
     'spawn chance' : [
@@ -294,4 +323,4 @@ mons_dict['stonegaze basilisk'] = {
         'color' : libtcod.dark_orange,
         'level' : 3,
         'subtypes' : ['reptile','lizard'],
-        'description' : 'uh oh'}}
+        'description' : ''}}

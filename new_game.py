@@ -4,13 +4,11 @@ import definitions as defn
 import libtcodpy as libtcod
 import object_classes as obcl
 import map_functions as mpfn
-import inventory_functions as infn
 import gui
 import dungeon_generator as dgen
 import random
 import spell_functions as spfn
 import game
-import spell_classes as spcl
 import spell_dictionary as sdic
 import monster_dictionary as mdic
 import equipment_dictionary as edic
@@ -46,7 +44,7 @@ def create_character():
 
     #Create player object
     mgdic.create_player(mage, 0, 0)
-    defn.player.personal_name = name
+    defn.player.name = name
 
 
 # Generate the instances of spells present in the game. For now, we'll just include all spells.
