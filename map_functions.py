@@ -39,9 +39,9 @@ def create_v_tunnel(y1, y2, x):
 
 def from_dungeon_level(table):
     #returns a value that depends on level. the table specifies what value occurs after each level, default is 0.
-    for (value, level) in reversed(table):
-        if defn.dungeon_level >= level:
-            return value
+    for pair in reversed(table):
+        if defn.dungeon_level >= pair['level']:
+            return pair['value']
     return 0
 
 def is_blocked(x, y):

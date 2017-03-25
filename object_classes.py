@@ -4,7 +4,6 @@ import gui
 import math
 import random
 import map_functions as mpfn
-import foo_dictionary as fdic
 import attack_dictionary as adic
 import game
 import equipment_dictionary as edic
@@ -363,6 +362,7 @@ class Item:
         #add to the player's inventory and remove from the map
         if len(defn.inventory) >= 26:
             gui.message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
+            return 'cancelled'
         else:
             defn.inventory.append(self.owner)
             defn.dungeon[self.owner.x][self.owner.y].objects.remove(self.owner)

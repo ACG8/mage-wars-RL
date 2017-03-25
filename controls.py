@@ -64,6 +64,7 @@ def handle_keys():
     
     if defn.game_state == 'playing':
 
+        #autoplay module
         if defn.autoplaying != None:
             #if any hostile monsters are in view, stop autoplaying:
             for obj in defn.objects:
@@ -72,14 +73,15 @@ def handle_keys():
                     defn.autoplaying = None
                     break
                     
-                    
             #check if a key was pressed to stop autoplaying, then move.
             if defn.key.vk == libtcod.KEY_NONE:
                 if defn.autoplaying == 'autoexplore':
                     #first check if standing on an item. If so, pick it up.
                     for obj in defn.dungeon[defn.player.x][defn.player.y].objects:  #look for an item in the player's tile
                         if obj.item:
-                            obj.item.pick_up()
+                            #we have an error where a full inventory will cause the player to remain on the same spot, continually trying to pick up the item.
+                            if obj.item.pick_up() == 'cancelled':
+                                defn.autoplaying == None
                             return
                     #compute fog of war (FOW) dijkstra map
                     unexplored_tiles = []
@@ -109,6 +111,7 @@ def handle_keys():
                     if defn.stairs.x == defn.player.x and defn.stairs.y == defn.player.y:
                         dgen.next_level()
                         defn.autoplaying = None
+                        return
                     #see if the portal is visible:
                     portals = []
                     for y in range(defn.MAP_HEIGHT):
@@ -233,7 +236,11 @@ def handle_keys():
                     return
 
             if key_char == '<':
-                #head toward stairs
+                #go up if standing on the portal
+                if defn.stairs.x == defn.player.x and defn.stairs.y == defn.player.y:
+                    dgen.next_level()
+                    defn.autoplaying = None
+                #head toward portal
                 defn.autoplaying = 'autoascend'
 
             if key_char == 'o':
@@ -277,7 +284,8 @@ def handle_keys():
                     ,defn.CHARACTER_SCREEN_WIDTH)
 
             if key_char == 'w':
-                defn.player.creature.heal(30)
+                #defn.player.creature.heal(30)
+                dgen.next_level()
                 
             return 'didnt-take-turn'
 

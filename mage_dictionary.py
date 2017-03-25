@@ -107,6 +107,7 @@ mage_dict['pellian forcemaster'] = {
     'mana' : 10,
     'channeling' : 10}
 
+#error (probably not from this module: taming a creature unsuccessfully causes it to temporarily disappear.
 def tame_beast(parameters, source=None, target=None):
     source=defn.player
     if parameters['target type']=='none':

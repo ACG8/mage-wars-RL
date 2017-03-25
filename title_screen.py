@@ -11,7 +11,7 @@ import game
 import shelve
 import spell_classes as spcl
 import spell_dictionary as sdic
-import creature_dictionary as cdic
+import monster_dictionary as mdic
 import equipment_dictionary as edic
 import mage_dictionary as mgdic
 import attack_dictionary as adic
@@ -86,6 +86,8 @@ def new_game():
     defn.spellbook = []
     defn.objects = []
     defn.dungeon = []
+
+    defn.dungeon_level = 1
 
     gui.clear_screen()
     

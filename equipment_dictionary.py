@@ -92,7 +92,9 @@ equip_dict['spiked buckler'] = {
         'description' :'Shield Bash:\nMelee 3\nPiercing +1\n\nSometimes, the best offense is a good defense.'}}
 
 equip_dict['leather boots'] = {
-    'spawn chance' : mpfn.from_dungeon_level([[25, 1],[15, 2]]),
+    'spawn chance' : mpfn.from_dungeon_level([
+        {'level' : 1, 'value' : 40},
+        {'level' : 2, 'value' : 30}]),
     'slot' : 'feet',
     'traits' : [],
     'trait bonus' : [['armor +',1]],
@@ -106,7 +108,9 @@ equip_dict['leather boots'] = {
 
 equip_dict['leather gloves'] = {
 
-    'spawn chance' : mpfn.from_dungeon_level([[25, 1],[15, 2]]),
+    'spawn chance' : mpfn.from_dungeon_level([
+        {'level' : 1, 'value' : 40},
+        {'level' : 2, 'value' : 30}]),
     'slot' : 'hands',
     'traits' : [],
     'trait bonus' : [['armor +',1]],
@@ -132,7 +136,9 @@ equip_dict['defense ring'] = {
         'description' : 'Defense Ring\n +1 to all Defenses\n\n\"Shields are so primitive. No need to sacrifice style for protection.\"\n -Xer, Arbiter of Eldritch Design'}}
 
 equip_dict['gauntlets of strength'] = {
-    'spawn chance' : mpfn.from_dungeon_level([[100, 1],[15, 2]]),
+    'spawn chance' : mpfn.from_dungeon_level([
+        {'level' : 1, 'value' : 40},
+        {'level' : 2, 'value' : 30}]),
     'slot' : 'hands',
     'traits' : [],
     'trait bonus' : [['melee +',1]],

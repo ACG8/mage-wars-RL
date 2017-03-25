@@ -113,7 +113,9 @@ def make_map():
 def place_objects(room):
 
     #choose random number of monsters
-    max_room_monsters = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
+    max_room_monsters = mpfn.from_dungeon_level([
+        {'level' : 1, 'value' : 1},
+        {'level' : 3, 'value' : 2}])
     num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
     for i in range(num_monsters):
         #choose random spot for this monster
@@ -128,7 +130,9 @@ def place_objects(room):
             defn.objects.append(monster)
             defn.dungeon[x][y].objects.append(monster)
 
-    max_room_equipment = mpfn.from_dungeon_level([[1, 1], [2, 4], [3, 6]])
+    max_room_equipment = mpfn.from_dungeon_level([
+        {'level' : 1, 'value' : 1},
+        {'level' : 3, 'value' : 2}])
 
     #choose random number of equipment items
     num_equipment = libtcod.random_get_int(0, 0, max_room_equipment)
@@ -148,7 +152,9 @@ def place_objects(room):
             equipment.send_to_back()
             defn.dungeon[x][y].objects.append(equipment)
 
-    max_room_items = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
+    max_room_items = mpfn.from_dungeon_level([
+        {'level' : 1, 'value' : 1},
+        {'level' : 3, 'value' : 2}])
 
     #choose random number of equipment items
     num_items = libtcod.random_get_int(0, 0, max_room_equipment)

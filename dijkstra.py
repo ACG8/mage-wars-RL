@@ -1,5 +1,6 @@
 import definitions as defn
 import random
+import data_methods as data
 
 #the only thing that matters when initializing a dijkstra map is the goals and impassable objects
 
@@ -89,5 +90,9 @@ class Map:
 
     def get_next_step(self,x,y):
         choices = self.lowest_neighbors(x,y)
+        #prefer orthogonal moves
+        for choice in choices:
+            if data.distance(choice.x,choice.y,x,y) == 1:
+                return choice
         return random.choice(choices)
         
