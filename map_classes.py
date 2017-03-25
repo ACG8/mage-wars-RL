@@ -1,10 +1,13 @@
 import definitions as defn
+import libtcodpy as libtcod
 
 class Tile:
     #a tile of the map and its properties
-    def __init__(self, x, y, blocked, block_sight = None):
+    def __init__(self, x, y, name, color, blocked, block_sight = None):
         self.x = x
         self.y = y
+        self.name = name
+        self.color = color
         self.blocked = blocked
         self.explored = False
         self.scent = 0

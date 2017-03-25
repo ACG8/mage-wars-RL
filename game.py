@@ -12,7 +12,15 @@ import controls as ctrl
 import dungeon_generator as dgen
 import spell_functions as spfn
 import title_screen as tit
-            
+
+def render_objects():
+    
+    for object in defn.objects:
+        if object != defn.player:
+            object.draw()
+    #player is always rendered last
+    defn.player.draw()
+
 def render_all():
 
     if defn.fov_recompute:
@@ -23,33 +31,20 @@ def render_all():
         #go through all tiles, and set their background color according to the FOV
         for y in range(defn.MAP_HEIGHT):
             for x in range(defn.MAP_WIDTH):
-                visible = libtcod.map_is_in_fov(defn.fov_map, x, y)
-                wall = defn.dungeon[x][y].block_sight
-                if not visible:
+                #is it visible?
+                if not libtcod.map_is_in_fov(defn.fov_map, x, y):
                     #if it's not visible right now, the player can only see it if it's explored
                     if defn.dungeon[x][y].explored:
                     #it's out of the player's FOV
-                        if wall:
-                            libtcod.console_set_char_background(defn.con, x, y, libtcod.darkest_grey, libtcod.BKGND_SET)
-                        else:
-                            libtcod.console_set_char_background(defn.con, x, y, libtcod.darkest_sepia, libtcod.BKGND_SET)
+                        libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color*libtcod.grey, libtcod.BKGND_SET)
                 else:
+                    libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                     #it's visible
-                    if wall:
-                        libtcod.console_set_char_background(defn.con, x, y, libtcod.grey, libtcod.BKGND_SET )
-                    else:
-                        libtcod.console_set_char_background(defn.con, x, y, libtcod.sepia, libtcod.BKGND_SET )
                     defn.dungeon[x][y].explored = True
-
-    #draw all objects in the list, except the player. we want it to
-    #always appear over all other objects! so it's drawn later.
-    for object in defn.objects:
-        if object != defn.player:
-            object.draw()
-    defn.player.draw()
+                
+    render_objects()
 
     libtcod.console_blit(defn.con, 0, 0, defn.MAP_WIDTH, defn.MAP_HEIGHT, 0, 0, 0)
-
     #prepare to render the GUI panel
     libtcod.console_set_default_background(defn.panel, libtcod.black)
     libtcod.console_clear(defn.panel)
@@ -76,36 +71,54 @@ def render_all():
     libtcod.console_blit(defn.panel, 0, 0, defn.SCREEN_WIDTH, defn.PANEL_HEIGHT, 0, 0, defn.PANEL_Y)
 
 def play_game():
- 
+
     player_action = None
  
     while not libtcod.console_is_window_closed():
         #render the screen
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
-        render_all()
- 
+        #render_all() - why not only render when it is the player's turn?
+
         libtcod.console_flush()
 
         #upkeep phase
         check_level_up()
-        #propagate_sound()
+
+        #for object in defn.objects:
+         #   object.clear()
+
+        #scent decay
+        for y in range(defn.MAP_HEIGHT):
+            for x in range(defn.MAP_WIDTH):
+                defn.dungeon[x][y].scent = max(defn.dungeon[x][y].scent-1,0)
  
-        #erase all objects at their old locations, before they move
-        for object in defn.objects:
-            object.clear()
- 
-        #handle keys and exit game if needed
-        player_action = ctrl.handle_keys()
-        if player_action == 'exit':
-            tit.save_game()
-            break
+        #if it is the player's turn, handle keys and exit game if needed
+        if defn.player.creature.turn_counter == 0:
+            defn.player.clear()
+            player_action = ctrl.handle_keys()
+            defn.dungeon[defn.player.x][defn.player.y].scent+=100
+            render_all()
+            if player_action == 'exit':
+                tit.save_game()
+                break
+        #add scent to floor
+        
+        
+        defn.player.creature.adjust_turn_counter(-1)
+
+        #for object in defn.objects:
+         #   object.clear()
  
         #let monsters take their turn
         if defn.game_state == 'playing' and player_action != 'didnt-take-turn':
-            for object in defn.objects:
-                if object.ai:
-                    object.ai.take_turn()
-
+            for obj in defn.objects:
+                obj.clear()
+                if obj.ai:
+                    if obj.creature.turn_counter == 0:
+                        obj.ai.take_turn()
+                    obj.creature.adjust_turn_counter(-1)
+                #obj.draw()
+                    
 def check_level_up():
     #see if the player's experience is enough to level-up
     level_up_xp = defn.LEVEL_UP_BASE + defn.player.level * defn.LEVEL_UP_FACTOR

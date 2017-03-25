@@ -11,6 +11,8 @@ import game
 import shelve
 import spell_classes as spcl
 import spell_dictionary as sdic
+import creature_dictionary as cdic
+import equipment_dictionary as edic
 
 def main_menu():
     img = libtcod.image_load(random.choice(defn.title_screen_choices))
@@ -83,9 +85,9 @@ def new_game():
     defn.dungeon = []
  
     #create object representing the player
-    creature_component = obcl.Creature(hp=30, mana=30, armor=0, xp=0, attacks=['sword attack'], death_function=obcl.player_death)
-    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, traits=[], blocks=True, creature=creature_component)
- 
+    creature_component = obcl.Creature(hp=30, mana=30, channeling=10, armor=0, xp=0, attacks=['basic melee attack'],
+        death_function=obcl.player_death)
+    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, traits=[['fast']], blocks=True, creature=creature_component)
     defn.player.level = 1
  
     #generate map (at this point it's not drawn to the screen)

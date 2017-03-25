@@ -102,8 +102,8 @@ def handle_keys():
                 #show the inventory; if an item is selected, use it
                 chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
                 if chosen_item is not None:
-                    chosen_item.use(chosen_item.owner.name)
-                    return
+                    if chosen_item.use() != 'cancelled':
+                        return
 
             if key_char == 'i':
                 #show the inventory; if an item is selected, describe it
@@ -139,12 +139,13 @@ def handle_keys():
                     '\nExperience to level up: ' + str(level_up_xp) +
                     '\n\nLife: ' + str(defn.player.creature.max_hp) +
                     '\n\nMana Capacity: ' + str(defn.player.creature.max_mana) +
-                    '\nMelee Attack: ' + str(defn.player.creature.power) +
+                    '\nAttack: ' + str(defn.player.creature.active_attack.capitalize()) +
+                    #'\nTraits: ' + str(defn.player.traits) + #; we'll leave this for a future date.
                     '\nArmor: ' + str(defn.player.creature.armor)
                     ,defn.CHARACTER_SCREEN_WIDTH)
 
             if key_char == 'w':
-                print game.get_adjacent_tiles(defn.player.x,defn.player.y)
+                defn.player.creature.heal(30)
                 
             return 'didnt-take-turn'
 
@@ -163,10 +164,9 @@ def player_move_or_attack(dx, dy):
  
     #attack if target found, move otherwise
     if target is not None:
-        #key = adic.attk_dict['basic attack']
-        #attack = accl.Attack(key[0],key[1],key[2],key[3])
-        #attack.target_creature(defn.player, target)
         defn.player.creature.attack(target)
+        defn.player.creature.adjust_turn_counter(2)
     else:
         defn.player.move(dx, dy)
         defn.fov_recompute = True
+        defn.player.creature.adjust_turn_counter(3)

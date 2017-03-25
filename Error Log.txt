@@ -1,3 +1,4 @@
 need to implement slow better; make action system.
 need to find more efficient way to implement double/triplestrike
 next: integrate attack spells into the system
+player can counterstrike even upon death, though obviously this is not a big deal

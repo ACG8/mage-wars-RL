@@ -3,12 +3,11 @@ import libtcodpy as libtcod
 import gui
 import math
 import random
-import inventory_functions as invfn
 import map_functions as mpfn
 import foo_dictionary as fdic
 import attack_dictionary as adic
-import action_classes as accl
 import game
+import equipment_dictionary as edic
 
 class Object:
     #this is a generic object: the player, a monster, an item, the stairs...
@@ -23,7 +22,7 @@ class Object:
         self.char = char
         self.color = color
         self.description = description
-        self.traits = traits
+        self.base_traits = traits
 
         self.creature = creature
         if self.creature:  #let the fighter component know who owns it
@@ -44,7 +43,21 @@ class Object:
             self.item = Item()
             self.item.owner = self
 
+    @property
+    def traits(self):
+        bonus_traits = []
+        bonus_sources = edic.get_all_equipped(self) #+enchantments + conditions, etc.
+        if bonus_sources:
+            for obj in bonus_sources:
+                bonus_traits += obj.trait_bonus
+        traits = self.base_traits + bonus_traits
+        return traits
+
     def describe(self):
+        #render the screen. this erases the inventory and shows the names of objects under the mouse.
+        libtcod.console_flush()
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
+        game.render_all()
         gui.msgbox(self.description)
  
     def move(self, dx, dy):
@@ -56,8 +69,7 @@ class Object:
     def draw(self):
         #set the color and then draw the character that represents this object at its position
         #only show if it's visible to the player; or it's set to "always visible" and on an explored tile
-        if (libtcod.map_is_in_fov(defn.fov_map, self.x, self.y) or
-            (self.always_visible and defn.dungeon[self.x][self.y].explored)):
+        if (libtcod.map_is_in_fov(defn.fov_map, self.x, self.y) or (self.always_visible and defn.dungeon[self.x][self.y].explored)):
             libtcod.console_set_default_foreground(defn.con, self.color)
             libtcod.console_put_char(defn.con, self.x, self.y, self.char, libtcod.BKGND_NONE)
             
@@ -97,8 +109,7 @@ class Object:
         return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
 class Creature:
-    #combat-related properties and methods (monster, player, NPC).
-    def __init__(self, hp, mana, armor, xp, attacks, death_function=None):
+    def __init__(self, hp, mana, channeling, armor, xp, attacks, death_function=None):
         self.death_function = death_function
         self.base_max_mana = mana
         self.mana = mana
@@ -107,53 +118,61 @@ class Creature:
         self.base_armor = armor
         self.xp = xp
         self.attacks = attacks
+        self.channeling = channeling
+        #initialize a turn counter. When counter reaches 0, action may be taken. Thus, different lengths of actions may be taken.
+        self.turn_counter = 0
+
+    @property
+    def active_attack(self):
+        if self.owner == defn.player:
+            equipment = edic.get_equipped_in_slot(defn.player, 'right hand')
+            if equipment and equipment.attacks:
+                return equipment.attacks[0]
+        return self.attacks[0]
 
     #returns attack bonus to [melee, range]
     @property
     def attack_bonus(self):
-        #compute melee bonus
+        #compute bonus to attack
         melee_bonus = 0
         range_bonus = 0
-        for trait in self.owner.traits:
-            if trait[0] == 'melee +':
-                melee_bonus += trait[1]
-            if trait[0] == 'range +':
-                range_bonus += trait[1]
+        if self.owner.traits:
+            for trait in self.owner.traits:
+                if trait[0] == 'melee +':
+                    melee_bonus += trait[1]
+                if trait[0] == 'range +':
+                    range_bonus += trait[1]
         return [melee_bonus, range_bonus]
 
     @property
     def armor(self):  #return actual armor, by summing up the bonuses from all equipped items
         armor_bonus = 0
-        for trait in self.owner.traits:
-            if trait[0] == 'armor +':
-                armor_bonus += trait[1]
+        if self.owner.traits:
+            for trait in self.owner.traits:
+                if trait[0] == 'armor +':
+                    armor_bonus += trait[1]
         return self.base_armor + armor_bonus
 
     @property
     def max_hp(self):  #return actual max_hp, by summing up the bonuses from all equipped items
         life_bonus = 0
-        for trait in self.owner.traits:
-            if trait[0] == 'life +':
-                life_bonus += trait[1]
+        if self.owner.traits:
+            for trait in self.owner.traits:
+                if trait[0] == 'life +':
+                    life_bonus += trait[1]
         return self.base_max_hp + life_bonus
  
     @property
     def max_mana(self):  #return actual max_hp, by summing up the bonuses from all equipped items
         mana_bonus = 0
-        for trait in self.owner.traits:
-            if trait[0] == 'mana capacity +':
-                mana_bonus += trait[1]
+        if self.owner.traits:
+            for trait in self.owner.traits:
+                if trait[0] == 'mana capacity +':
+                    mana_bonus += trait[1]
         return self.base_max_mana + mana_bonus
 
-#computes creature's traits along with traits acquired from equipment. Later will add traits acquired from other sources.
-    @property
-    def traits(self):
-        bonus_traits = []
-        for obj in get_all_equipped(self):
-            bonus_traits += obj.trait_bonus
-        print self.owner.traits + bonus_traits
-        return self.owner.traits + bonus_traits
-            
+    def adjust_turn_counter(self, turns):
+        self.turn_counter = max(self.turn_counter + turns,0)
 
     def take_damage(self, damage):
         #apply damage if possible
@@ -168,12 +187,13 @@ class Creature:
                     defn.player.creature.xp += self.xp
 
     def attack(self, target):
-        arg = adic.attk_dict[self.attacks[0]]
+        arg = adic.attk_dict[self.active_attack]
         if 'melee' in arg['range'][0]:
             dice_bonus = self.attack_bonus[0]
         if 'ranged' in ['range'][0]:
             dice_bonus = self.attack_bonus[1]
-        attack = accl.Attack(arg['name'], arg['attack dice'], arg['traits'], arg['effects'], dice_bonus)
+        attack = adic.get_attack(arg['name'])
+        attack.dice_bonus = dice_bonus
         attack.target_creature(self.owner, target)
 
     def heal(self, amount):
@@ -190,7 +210,7 @@ class Creature:
             return 'cancelled'
 
 class BasicMonster:
-    #AI for a basic monster.
+    #Generic Monster AI
     def take_turn(self):
         #a basic monster takes its turn. If you can see it, it can see you
         monster = self.owner
@@ -198,18 +218,19 @@ class BasicMonster:
  
             #move towards player if far away; slow creatures move every other turn, randomly (will change)
             if monster.distance_to(defn.player) >= 2:
-                tile_choice = find_best_move(monster.x,monster.y)
-                move_target = tile_choice
-                libtcod.console_set_char_background(defn.con, move_target.x, move_target.y, libtcod.blue, libtcod.BKGND_SET )
-                if not(libtcod.random_get_int(0, 0, 1)==1 and 'slow' in monster.traits):
-                    monster.move_towards(move_target.x, move_target.y)
-                #fast creatures move again
-                if ('fast' in monster.traits) and (monster.distance_to(defn.player) >= 2):
-                    monster.move_towards(defn.player.x, defn.player.y)
- 
+                destination = find_best_move(monster.x,monster.y)
+                monster.move_towards(destination.x, destination.y)
+                monster.creature.adjust_turn_counter(3)
+                if monster.traits:
+                    if ['fast'] in monster.traits:
+                        monster.creature.adjust_turn_counter(-1)
+                    if ['slow'] in monster.traits:
+                        monster.creature.adjust_turn_counter(1)
+                        
             #close enough, attack! (if the player is still alive.)
             elif defn.player.creature.hp > 0:
                 monster.creature.attack(defn.player)
+                monster.creature.adjust_turn_counter(2)
 
 def find_best_move(x,y):
     #Scans surrounding tiles, weights them, and returns the best one. Currently just evaluates distance between tile and player. x and y are the current location from which the best move is being computed.
@@ -218,14 +239,20 @@ def find_best_move(x,y):
     best_choice = None
     best_value = None
     for tile in choices:
-        libtcod.console_set_char_background(defn.con, defn.player.x, defn.player.y, libtcod.green, libtcod.BKGND_SET )
-        libtcod.console_set_char_background(defn.con, tile.x, tile.y, libtcod.red, libtcod.BKGND_SET )
-        value = 100 / max(math.sqrt((tile.x-defn.player.x) ** 2 + (tile.y-defn.player.y) ** 2),1)#max(distance(tile.x,tile.y,defn.player.x,defn.player.y),1)
-        print value
+        value = 0
+        #if you see the player, follow them
+        if libtcod.map_is_in_fov(defn.fov_map, x, y):
+            value -= 2 * math.sqrt((tile.x-defn.player.x) ** 2 + (tile.y-defn.player.y) ** 2)
+        #if not,
+        else:
+        #follow player's scent
+            value += tile.scent
+        #random wandering
+            #value += libtcod.random_get_int(0,0,1)
+        
         if (value > best_value) or (best_choice == None):
             best_value = value
             best_choice = tile
-    print best_choice
     return best_choice
 
 def distance (x1,y1,x2,y2):
@@ -263,8 +290,9 @@ class ConfusedMonster:
             gui.message('The ' + self.owner.name + ' is no longer confused!', libtcod.red)
 
 class Item:
-    def __init__(self, use_function=None):
+    def __init__(self, use_function=None, parameters=None):
         self.use_function = use_function
+        self.parameters = parameters
     #an item that can be picked up and used.
     def pick_up(self):
         #add to the player's inventory and remove from the map
@@ -276,20 +304,21 @@ class Item:
             gui.message('You picked up a ' + self.owner.name + '!', libtcod.green)
             #special case: automatically equip, if the corresponding equipment slot is unused
             equipment = self.owner.equipment
-            if equipment and invfn.get_equipped_in_slot(equipment.slot) is None:
+            if equipment and edic.get_equipped_in_slot(defn.player, equipment.slot) is None:
                 equipment.equip()
-    def use(self, name):
+    def use(self):
         #note: name is just so that certain use functions can be generalized. Not necessary for all purposes.
         #special case: if the object has the Equipment component, the "use" action is to equip/dequip
         if self.owner.equipment:
             self.owner.equipment.toggle_equip()
             return
         #just call the "use_function" if it is defined
-        if self.use_function is None:
-            gui.message('The ' + self.owner.name + ' cannot be used.')
-        else:
-            if self.use_function(name) != 'cancelled':
-                defn.inventory.remove(self.owner)  #destroy after use, unless it was cancelled for some reason
+        #if self.use_function(name) is None:
+         #   gui.message('The ' + self.owner.name + ' cannot be used.')
+        #else:
+        if self.use_function(self.parameters) != 'cancelled':
+            defn.inventory.remove(self.owner)  #destroy after use, unless it was cancelled for some reason
+        else: return 'cancelled'
 
     def drop(self):
         #add to the map and remove from the player's inventory. also, place it at the player's coordinates
@@ -308,6 +337,7 @@ class Equipment:
         self.slot = slot
         self.trait_bonus = trait_bonus
         self.is_equipped = False
+        self.attacks = attacks
  
     def toggle_equip(self):  #toggle equip/dequip status
         if self.is_equipped:
@@ -318,7 +348,7 @@ class Equipment:
     def equip(self):
         #equip object and show a message about it
         #if the slot is already being used, dequip whatever is there first
-        old_equipment = invfn.get_equipped_in_slot(self.slot)
+        old_equipment = edic.get_equipped_in_slot(defn.player, self.slot)
         if old_equipment is not None:
             old_equipment.dequip()
         self.is_equipped = True

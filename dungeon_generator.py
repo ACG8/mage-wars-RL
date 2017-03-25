@@ -7,6 +7,9 @@ import random_generator_functions as rng
 import spell_functions as spfn
 import gui
 import foo_dictionary as fdic
+import monster_dictionary as mdic
+import item_dictionary as idic
+import equipment_dictionary as edic
             
 def make_map():
  
@@ -14,7 +17,7 @@ def make_map():
     defn.objects = [defn.player]
  
     #fill map with "blocked" tiles
-    defn.dungeon = [[ mpcl.Tile(x,y,True)
+    defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.light_grey, True)
         for y in range(defn.MAP_HEIGHT) ]
             for x in range(defn.MAP_WIDTH) ]
             
@@ -44,9 +47,6 @@ def make_map():
         if not failed:
             #"paint" it to the map's tiles
             mpfn.create_room(new_room)
-            
-            #populate the room with objects
-            place_objects(new_room)
 
             #get center coordinates of new room
             (new_x, new_y) = new_room.center()
@@ -72,6 +72,11 @@ def make_map():
                     #first move vertically, then horizontally
                     mpfn.create_v_tunnel(prev_y, new_y, prev_x)
                     mpfn.create_h_tunnel(prev_x, new_x, new_y)
+
+                                
+            #populate the room with objects
+            place_objects(new_room)
+            
             #finally, append the new room to the list
             rooms.append(new_room)
             num_rooms += 1
@@ -95,8 +100,8 @@ def place_objects(room):
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
             #choose a random monster from the dictionary
-            choice = rng.random_choice(fdic.mons_dict)
-            monster = fdic.create_monster(choice[0],x,y)
+            arg = rng.random_choice(mdic.mons_dict)
+            monster = mdic.create_monster(arg['name'],x,y)
             #add new monster to the game
             defn.objects.append(monster)
 
@@ -112,8 +117,8 @@ def place_objects(room):
  
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
-            choice = rng.random_choice(fdic.equip_dict)
-            equipment = fdic.create_equipment(choice[0],x,y)
+            arg = rng.random_choice(edic.equip_dict)
+            equipment = edic.create_equipment(arg['name'],x,y)
             equipment.always_visible = True
 
             defn.objects.append(equipment)
@@ -131,9 +136,8 @@ def place_objects(room):
  
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
-            choice = rng.random_choice(fdic.item_dict)
-            item_component = obcl.Item(use_function=choice[4])
-            item = obcl.Object(x, y, choice[2], choice[0], choice[3], description=choice[5], item=item_component)
+            arg = rng.random_choice(idic.item_dict)
+            item = idic.create_item(arg['name'],x,y)
             item.always_visible = True
 
             defn.objects.append(item)

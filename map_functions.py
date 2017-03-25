@@ -19,16 +19,22 @@ def create_room(room):
         for y in range(room.y1 + 1, room.y2):
             defn.dungeon[x][y].blocked = False
             defn.dungeon[x][y].block_sight = False
+            defn.dungeon[x][y].name = 'floor'
+            defn.dungeon[x][y].color = libtcod.sepia
 
 def create_h_tunnel(x1, x2, y):
     for x in range(min(x1, x2), max(x1, x2) + 1):
         defn.dungeon[x][y].blocked = False
         defn.dungeon[x][y].block_sight = False
+        defn.dungeon[x][y].name = 'floor'
+        defn.dungeon[x][y].color = libtcod.sepia
 
 def create_v_tunnel(y1, y2, x):
     for y in range(min(y1, y2), max(y1, y2) + 1):
         defn.dungeon[x][y].blocked = False
         defn.dungeon[x][y].block_sight = False
+        defn.dungeon[x][y].name = 'floor'
+        defn.dungeon[x][y].color = libtcod.sepia
 
 def from_dungeon_level(table):
     #returns a value that depends on level. the table specifies what value occurs after each level, default is 0.
