@@ -1,11 +1,5 @@
-# this program generates dijkstra maps for each level, given the various features.
-#we need:
-# a set of goal tiles.
-#goals[]
-#that's it. We also need a map.
-#defn.dungeon[x][y] defines one tile of the map.
-
 import definitions as defn
+import random
 
 #the only thing that matters when initializing a dijkstra map is the goals and impassable objects
 
@@ -61,3 +55,8 @@ class Map:
             if self.array[tile.x][tile.y] == lowest_neighbor_value:
                 neighbor_list.append(tile)
         return neighbor_list
+
+    def get_next_step(self,x,y):
+        choices = self.lowest_neighbors(x,y)
+        return random.choice(choices)
+        

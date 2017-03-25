@@ -18,6 +18,8 @@ class Tile:
         #careful - the list of adjacent tiles can only be generated after all tiles have been created.
         self.adjacent_tiles = []
         #insane idea - why not define a static dijkstra map for every unblocked tile?
+        #we create a list of objects that may be found on this tile.
+        self.objects = []
 
     def compute_adjacent_tiles(self):
         neighbors = []

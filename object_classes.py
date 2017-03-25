@@ -63,9 +63,30 @@ class Object:
  
     def move(self, dx, dy):
         if not mpfn.is_blocked(self.x + dx, self.y + dy):
+        #remove self from current tile. If statement is temporary, to patch an error - ideally, would not need this
+            if self in defn.dungeon[self.x][self.y].objects:
+                defn.dungeon[self.x][self.y].objects.remove(self)
         #move by the given amount
             self.x += dx
             self.y += dy
+        #place self in new tile.
+            defn.dungeon[self.x][self.y].objects.append(self)
+        #let's see if this is enough.
+
+    def swap_places(self, target):
+            thingA = [self.x, self.y]
+            thingB = [target.x, target.y]
+            #again, if statement is clumsy. Need to fix underlying problem
+            if self in defn.dungeon[self.x][self.y].objects:
+                defn.dungeon[self.x][self.y].objects.remove(self)
+            if target in defn.dungeon[target.x][target.y].objects:
+                defn.dungeon[target.x][target.y].objects.remove(target)
+            self.x = thingB[0]
+            self.y = thingB[1]
+            target.x = thingA[0]
+            target.y = thingA[1]
+            defn.dungeon[self.x][self.y].objects.append(self)
+            defn.dungeon[target.x][target.y].objects.append(target)
  
     def draw(self):
         #set the color and then draw the character that represents this object at its position
@@ -110,7 +131,7 @@ class Object:
         return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
 class Creature:
-    def __init__(self, hp, mana, channeling, armor, xp, attacks, defenses = [], death_function=None):
+    def __init__(self, hp, mana, channeling, armor, xp, attacks, defense, alignment, death_function=None):
         self.death_function = death_function
         self.base_max_mana = mana
         self.mana = mana
@@ -120,9 +141,21 @@ class Creature:
         self.xp = xp
         self.base_attacks = attacks
         self.channeling = channeling
-        self.base_defenses = defenses
+        self.base_defenses = defense
+        
         #initialize a turn counter. When counter reaches 0, action may be taken. Thus, different lengths of actions may be taken.
         self.turn_counter = 0
+
+        #upkeep counter ticks down every turn. Every 3 turns, upkeep kicks in.
+        #current system does not work as intended. I have a better idea: when you advance your turn counter, you also advance your upkeep counter.
+        #will implement when it becomes more relevant
+        self.upkeep_counter = 0
+
+        #keep track of condition markers
+        self.conditions = []
+
+        #set alignment
+        self.alignment = alignment
 
     @property
     def defenses(self):
@@ -179,6 +212,32 @@ class Creature:
 
     def adjust_turn_counter(self, turns):
         self.turn_counter = max(self.turn_counter + turns,0)
+        #let's try tying upkeep to turn counter. for now, a round can be 5 units of time.:
+        self.upkeep_counter += turns
+        if self.upkeep_counter >= 5:
+            while self.upkeep_counter >= 20:
+                self.upkeep()
+                self.upkeep_counter = max(self.upkeep_counter - 20,0)
+            
+
+    def upkeep(self):
+        self.mana = min(self.mana + self.channeling, self.max_mana)
+            #upkeep effects
+        rotted = False
+        burned = False
+        for condition in self.conditions:
+            if condition == 'rot':
+                self.take_damage(1)
+                if not rotted:
+                    gui.message (self.owner.name.capitalize() + ' rots.', libtcod.purple)
+                    rotted = True
+            if condition == 'burn':
+                #need to manage flavor text
+                burn_roll = libtcod_random_get_int(0,0,2)
+                if burn_roll == 0:
+                    self.conditions.remove(condition)
+                else:
+                    self.take_damage(burn_roll)
 
     def take_damage(self, damage):
         #apply damage if possible
@@ -192,17 +251,47 @@ class Creature:
                 if self.owner != defn.player:  #yield experience to the player
                     defn.player.creature.xp += self.xp
 
-    def attack(self, target, attack, is_counterstrike=None):
-        arg = adic.attk_dict[attack]
-        if 'melee' in arg['range'][0]:
+    def attack(self, target, attack):
+        if attack.range[0] == 'melee':
             dice_bonus = self.attack_bonus[0]
-        if 'ranged' in arg['range'][0]:
-            dice_bonus = self.attack_bonus[1]
-        attack = adic.get_attack(arg['name'])
-        attack.is_counterstrike = is_counterstrike
+        if attack.range[0] == 'ranged':
+            dice_bonus = self.attack_bonus[0]
         attack.dice_bonus = dice_bonus
-        attack.declare_attack(self.owner, target)
+        #0 is a placeholder - currently, there are no d12 bonuses. Eventually, will want separate function to compute bonuses
+        attack.declare_attack(self.owner, target, dice_bonus, 0)
 
+    def try_to_move(self, x, y):
+
+        #this function works but takes too much time. How to optimize it?
+        
+        #this function makes the creature attempt to move toward the specified space. If it fails, it tries to attack or swap with whatever it finds there.
+        #if there is a hostile creature there, attack it.
+            #try to find an attackable object there
+        if defn.dungeon[x][y].objects:
+            for obj in defn.dungeon[x][y].objects:
+                if obj.creature and obj.x == x and obj.y == y and obj != self.owner:
+                    if obj.creature.alignment != self.alignment:
+                        #it's an enemy. attack it!
+                        self.attack(obj, self.active_attack)
+                        self.adjust_turn_counter(self.active_attack.speed['turns'])
+                        return 'attack'
+                    elif obj.creature.alignment == self.alignment:
+                        #it's a friend. Swap places with it. Caution - I am worried about this resulting in infinite swaps, with creatures never getting anywhere.
+                        #ultimately, creatures should only be able to swap with lower level creatures, I think
+                        self.owner.swap_places(obj)
+                        return 'swap'
+        #nothing there, so let's move there. Ultimately, I need to consolidate the timing system, probably into this function.
+        self.owner.move_towards(x,y)
+        if self.owner == defn.player:
+            defn.fov_recompute = True
+            defn.player_location_changed = True
+        self.adjust_turn_counter(3)
+        if self.owner.traits:
+            if ['fast'] in self.owner.traits:
+                self.adjust_turn_counter(-1)
+            if ['slow'] in self.owner.traits:
+                self.adjust_turn_counter(1)
+        
     def heal(self, amount):
         #heal by the given amount, without going over the maximum
         #note: need to do periodic check, in case player loses life without taking damage

@@ -56,7 +56,8 @@ def make_map():
                 #this is the first room, where the player starts
                 defn.player.x = new_x
                 defn.player.y = new_y
-                defn.dungeon[defn.player.x][defn.player.y].scent += 100
+                defn.dungeon[defn.player.x][defn.player.y].objects.append(defn.player)
+
             else:
                 #all rooms after the first:
                 #connect it to the previous room with a tunnel
@@ -116,9 +117,10 @@ def place_objects(room):
         if not mpfn.is_blocked(x, y):
             #choose a random monster from the dictionary
             arg = rng.random_choice(mdic.mons_dict)
-            monster = mdic.create_monster(arg['name'],x,y)
+            monster = mdic.get_monster(arg['name'],x,y)
             #add new monster to the game
             defn.objects.append(monster)
+            defn.dungeon[x][y].objects.append(monster)
 
     max_room_equipment = mpfn.from_dungeon_level([[1, 1], [2, 4], [3, 6]])
 
@@ -133,11 +135,12 @@ def place_objects(room):
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
             arg = rng.random_choice(edic.equip_dict)
-            equipment = edic.create_equipment(arg['name'],x,y)
+            equipment = edic.get_equipment(arg['name'],x,y)
             equipment.always_visible = True
 
             defn.objects.append(equipment)
             equipment.send_to_back()
+            defn.dungeon[x][y].objects.append(equipment)
 
     max_room_items = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
 
@@ -152,11 +155,12 @@ def place_objects(room):
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
             arg = rng.random_choice(idic.item_dict)
-            item = idic.create_item(arg['name'],x,y)
+            item = idic.get_item(arg['name'],x,y)
             item.always_visible = True
 
             defn.objects.append(item)
             item.send_to_back()
+            defn.dungeon[x][y].objects.append(item)
 
 #advance to the next level
 def next_level():

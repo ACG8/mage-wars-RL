@@ -73,10 +73,14 @@ class Spell:
     def __init__(self, name, base_cost, function, parameters):
         self.name = name
         self.base_cost = base_cost
-        self.cost = 3 * base_cost
         #function indicates the general function to call. Parameters returns a dictionary used to define the parameters of the function.
         self.function = function
         self.parameters = parameters
+
+    @property
+    def cost(self):
+        #placeholder for when costs can be changed
+        return self.base_cost
 
     def cast(self, source):
         if self.function is None:
@@ -101,9 +105,12 @@ class Spell:
 
 #a list of spells, their associated levels, their base costs, their associated use functions, and their descriptions.
 
-def get_spell(name):
-    arg = spell_dict[name]
-    spell = Spell(arg['name'], arg['base cost'], arg['function'], arg['parameters'])
+def get_spell(dictionary):
+    spell = Spell(
+        dictionary['name'],
+        dictionary['base cost'],
+        dictionary['function'],
+        dictionary['parameters'])
     return spell
 
 spell_dict = {}
@@ -132,19 +139,6 @@ spell_dict['minor heal'] = {
         'amount healed' : sum([libtcod.random_get_int(0,0,2) for i in range(5)]),
         'conditions removed' : None},
     'description' : '\"No scratch is insignificant to the Goddess\"\n -On Health and Blessings True'}
-
-spell_dict['force pull'] = {
-    'name' : 'force pull',
-    'level' : [['mind', 1]],
-    'base cost' : 1,
-    'type' : ['force'],
-    'function' : pushing_spell,
-    'parameters' : {
-        'range' : 8,
-        'target type' : 'creature',
-        'direction' : 'inward',
-        'distance' : 3},
-    'description' : '\"Come a little closer...\"'}
 
 spell_dict['heal'] = {
     'name' : 'heal',

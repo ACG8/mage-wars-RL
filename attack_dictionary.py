@@ -5,29 +5,24 @@ import random
 
 class Attack:
     #any attack made by one creature against another
-    def __init__(self, name, dice, attack_range, traits, effects, dice_bonus=0, d12_bonus=0):
-        self.base_dice = dice
+    def __init__(self, name, dice, attack_range, traits, effects, speed):
+        self.dice = dice
         self.range = attack_range
         self.name = name
-        self.dice_bonus = dice_bonus
         self.traits = traits
         self.effects = effects
-        self.d12_bonus = d12_bonus
         self.is_counterstrike = False
-        
-    @property
-    def dice(self):
-        return self.base_dice + self.dice_bonus
+        self.speed = speed
 
-    def declare_attack(self, source, target):
+    def declare_attack(self, source, target, dice_bonus, d12_bonus):
         #to avoid the corpse-counterattack problem, check if target is a monster.
         if target.creature:
-            self.resolve_attack_roll(self.dice, self.d12_bonus, source, target)
+            self.resolve_attack_roll(self.dice + dice_bonus, d12_bonus, source, target)
             #additional strikes do not gain any bonuses.
             if source.creature and (['doublestrike'] in self.traits or ['triplestrike']) in self.traits:
-                self.resolve_attack_roll(self.base_dice, self.d12_bonus, source, target)
+                self.resolve_attack_roll(self.dice, d12_bonus, source, target)
             if source.creature and ['triplestrike'] in self.traits:
-                self.resolve_attack_roll(self.base_dice, self.d12_bonus, source, target)
+                self.resolve_attack_roll(self.dice, d12_bonus, source, target)
 
     def resolve_attack_roll(self, dice, d12_bonus, source, target):
 
@@ -55,27 +50,33 @@ class Attack:
         if not avoided:
             normal_damage=0
             critical_damage=0
+
+            dice_to_roll = dice
+            
+            #subtract dice if weak. Later can also add aegis here.
+            if source.creature:
+                for condition in source.creature.conditions:
+                    if condition == 'weak' and 'magical' not in self.traits:
+                        dice_to_roll -= 1
             
             if not ['no damage'] in self.traits:
-                for i in range(max(dice,1)):
+                for i in range(max(dice_to_roll,1)):
                     roll = libtcod.random_get_int(0,0,2)
                     crit = roll * libtcod.random_get_int(0,0,1)
-                    normal_damage += roll - crit
-                    critical_damage += crit
-                        
+                    if ['incorporeal'] in target.traits and not ['ethereal'] in self.traits:
+                        #unlike the game, this formula is the simplest way to implement this:
+                        normal_damage += max(roll - crit -1, 0)
+                        critical_damage += max(crit - 1,0)
+                    else:
+                        normal_damage += roll - crit
+                        critical_damage += crit
+
             armor = max(target.creature.armor - data.sum_values_from_list(self.traits, 'piercing +'), 0)
-            damage = max(normal_damage - armor, 0) + critical_damage
 
-            roll = libtcod.random_get_int(0,1,12)
-
-            #rolling for effects
-            effects = None
-            if self.effects:
-                for effect in self.effects:
-                    if roll >= effect[1]:
-                        effects = effect[0]
-
-            #need to implement attack effects
+            if ['resilient'] in target.traits:
+                damage = critical_damage
+            else:
+                damage = max(normal_damage - armor, 0) + critical_damage
 
             if damage > 0:
                 if not self.is_counterstrike:
@@ -89,6 +90,24 @@ class Attack:
                 else:
                     gui.message (source.name.capitalize() + ' retaliates but fails to inflict any damage.', libtcod.orange)
 
+            roll = libtcod.random_get_int(0,1,12)
+
+            #rolling for effects
+            effects = None
+            if self.effects:
+                for effect in self.effects:
+                    if roll >= effect[1]:
+                        effects = effect[0]
+
+            #implement effects
+            if effects and target.creature:
+                #for now, don't worry about poison immunity.
+                for effect in effects:
+                    #long term should probably define a class of conditions or something so I don't have to maintain a list of what constitutes a condition.
+                    if effect in ['rot','weak','burn']:
+                        gui.message (source.name.capitalize() + ' inflicts ' + effect + ' on ' + target.name + '!', libtcod.purple)
+                        target.creature.conditions.append(effect)                        
+
             #resolve counterstrikes. currently just takes the first counterstriking attack it finds.
             #note that counterstrikes currently use up time
             #something odd going on here; sometimes target.creature has no attack attribute.
@@ -96,18 +115,23 @@ class Attack:
             #check if target still exists as a creature, e.g. has not been killed or so forth with 'if target.creature'
                 #long run find a better way to fix this problem
                 
-
         if target.creature:
             if target.creature.attacks and self.range[0] == 'melee' and not self.is_counterstrike:
                 for attack in target.creature.attacks:
                     #currently returns the first counterattack it finds. special case for shield bash, rather than giving defenses effects
-                    if (['counterstrike'] in attk_dict[attack]['traits']) or (attk_dict[attack]['name'] == 'shield bash' and def_effect == 'shield bash'):
-                        target.creature.attack(source,attack,is_counterstrike=True)
+                    if (['counterstrike'] in attack.traits) or (attack.name == 'shield bash' and def_effect == 'shield bash'):
+                        attack.is_counterstrike = True
+                        target.creature.attack(source,attack)
+                        attack.is_counterstrike = False
                         break
 
-def get_defense(parameters):
-    if parameters:
-        defense = Defense(parameters['minimum roll'], parameters['max uses'], parameters['range'], parameters['effect'])
+def get_defense(dictionary):
+    if dictionary:
+        defense = Defense(
+            dictionary['minimum roll'],
+            dictionary['max uses'],
+            dictionary['range'],
+            dictionary['effect'])
         return defense
     return None
     
@@ -132,10 +156,17 @@ class Defense:
         self.uses = self.max_uses
 
 #retrieve an attack from the dictionary
-def get_attack(name):
-    arg = attk_dict[name]
-    attack = Attack(name = arg['name'], attack_range = arg['range'], dice = arg['attack dice'], traits = arg['traits'], effects = arg['effects'])
-    return attack
+def get_attack(dictionary):
+    if dictionary:
+        attack = Attack(
+            name = dictionary['name'],
+            attack_range = dictionary['range'],
+            dice = dictionary['attack dice'],
+            traits = dictionary['traits'],
+            effects = dictionary['effects'],
+            speed = dictionary['speed'])
+        return attack
+    return None
 
 attk_dict = {}
 
@@ -149,43 +180,9 @@ attk_dict['basic melee attack'] = {
     'effects' : [],
     'target type' : 'creature',
     'range' : ['melee',1],
-    'speed' : ['quick', 2]}
-
-attk_dict['razor edged slash'] = {
-    'name' : 'razor edged slash',
-    'attack dice' : 4,
-    'traits' : [['piercing +', 2]],
-    'effects' : [],
-    'target type' : 'creature',
-    'range' : ['melee', 1],
-    'speed' : ['quick', 2]}
-
-attk_dict['shield bash'] = {
-    'name' : 'shield bash',
-    'attack dice' : 3,
-    'traits' : [['piercing +', 1]],
-    'effects' : [],
-    'target type' : 'creature',
-    'range' : ['melee', 1],
-    'speed' : ['quick', 2]}
-
-attk_dict['triple bite'] = {
-    'name' : 'triple bite',
-    'attack dice' : 3,
-    'traits' : [['triplestrike']],
-    'effects' : [],
-    'target type' : 'creature',
-    'range' : ['melee', 1],
-    'speed' : ['full', 4]}
-
-attk_dict['snapping bite'] = {
-    'name' : 'snapping bite',
-    'attack dice' : 4,
-    'traits' : [['counterstrike']],
-    'effects' : [],
-    'target type' : 'creature',
-    'range' : ['melee', 1],
-    'speed' : ['quick', 2]}
+    'speed' : {
+        'type' : 'quick',
+        'turns' : 2}}
 
 #spell attacks
 
@@ -196,4 +193,6 @@ attk_dict['lightning bolt'] = {
     'effects' : [[['daze'],6],[['stun'],8]],
     'target type' : 'creature',
     'range' : ['ranged', 5],
-    'speed' : ['quick', 1]}
+    'speed' : {
+        'type' : 'quick',
+        'turns' : 1}}

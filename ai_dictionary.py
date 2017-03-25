@@ -1,11 +1,23 @@
 import definitions as defn
 import dijkstra as djks
 import random
+import libtcodpy as libtcod
 
 class Ai:
-    def __init__(self, personality, traits):
+    def __init__(self, personality, traits, senses):
         self.personality = personality
         self.traits = traits
+        self.senses = senses
+
+    def can_detect_player(self):
+        #this function returns true if this creature can detect the target.
+        actor = self.owner
+        #currently, let's just stick with hearing and sight. For sight, we'll just check for FOV right now.
+        if libtcod.map_is_in_fov(defn.fov_map, actor.x, actor.y):
+            return True
+        if defn.dijkstra_player_map.array[actor.x][actor.y] <= self.senses['hearing']:
+            return True
+        return False
         
     def take_turn(self):
         #a basic monster takes its turn. If you can see it, it can see you
@@ -15,22 +27,23 @@ class Ai:
         if self.owner.creature.hp <= self.owner.creature.max_hp * self.personality['fear']:
                 player_weight = -1
             #move towards player if far away; slow creatures move every other turn, randomly (will change). Need to fix monster-corpse problem again with monster.creature check
-        if monster.distance_to(defn.player) >= 2 or player_weight == -1:
+        if True: #monster.distance_to(defn.player) >= 2 or player_weight == -1:
             destination = self.find_best_move()
-            monster.move_towards(destination.x, destination.y)
-            monster.creature.adjust_turn_counter(3)
-            if monster.traits:
-                if ['fast'] in monster.traits:
-                    monster.creature.adjust_turn_counter(-1)
-                if ['slow'] in monster.traits:
-                    monster.creature.adjust_turn_counter(1)
+            monster.creature.try_to_move(destination.x,destination.y)
+            #monster.move_towards(destination.x, destination.y)
+            #monster.creature.adjust_turn_counter(3)
+            #if monster.traits:
+             #   if ['fast'] in monster.traits:
+              #      monster.creature.adjust_turn_counter(-1)
+               # if ['slow'] in monster.traits:
+                #    monster.creature.adjust_turn_counter(1)
                         
             #close enough, attack! (if the player is still alive.)
-        elif defn.player.creature.hp > 0:
+      #  elif defn.player.creature.hp > 0 and self.alignment != 'player':
             #odd occasional error where monster.creature is none_type; again, the issue of the monster becoming a corpse rears its head. Must find more elegant solution.
                 #current solution - attacking is the last thing the monster does.
-            monster.creature.adjust_turn_counter(3)
-            monster.creature.attack(defn.player,monster.creature.active_attack)
+       #     monster.creature.adjust_turn_counter(3)
+        #    monster.creature.attack(defn.player,monster.creature.active_attack)
 
     def find_best_move(self):
         #Scans surrounding tiles, weights them, and returns the best one. Currently just evaluates distance between tile and player. x and y are the current location from which the best move is being computed.
@@ -38,46 +51,99 @@ class Ai:
         #uses dijkstra weighted maps. currently just looks for player.
         #or statement leads to hearing based on dijkstra distance from player; some creatures can hear
         #hearing disabled for now
+        actor = self.owner
+        
         #if libtcod.map_is_in_fov(defn.fov_map, creature.x, creature.y):
 
         #temporary disable for testing
         #return defn.dungeon[creature.x][creature.y]
+        #note: owner of ai should really be creature, not object
+        #ai for dungeon denizens
+        if self.owner.creature.alignment == 'dungeon':
 
-        dijkstra_map = djks.Map([])
-        player_weight = 1
-        if self.owner.creature.hp <= self.owner.creature.max_hp * self.personality['fear']:
-                player_weight = -1
-        
-        for tile in defn.dungeon_unblocked_list:
-            dijkstra_map.array[tile.x][tile.y] = defn.dijkstra_player_map.array[tile.x][tile.y]*player_weight + 0.5*defn.dijkstra_monster_map.array[tile.x][tile.y]
-            #avoid other objects
-            for obj in defn.objects:
-                if obj.blocks:
-                    dijkstra_map.array[obj.x][obj.y] += 1
+            player_weight = 0.0
+            fov_weight = 0.0
+
+            dijkstra_map = djks.Map([])
+            if self.can_detect_player():
+                player_weight = 1.0
+                #scared creatures run from player and try to stay out of view
+                if self.owner.creature.hp <= self.owner.creature.max_hp * self.personality['fear']:
+                    player_weight = -1.0
+                    fov_weight = 1.0
                 
-        choices = dijkstra_map.lowest_neighbors(self.owner.x,self.owner.y)
-        #if len(choices) == 1:
-         #   return choices[0]
-        return random.choice(choices)
+                            
+            for tile in defn.dungeon_unblocked_list:
+                dijkstra_map.array[tile.x][tile.y] = (
+                    defn.dijkstra_player_map.array[tile.x][tile.y] * player_weight +
+                    defn.dijkstra_fov_map.array[tile.x][tile.y] * fov_weight) #+
+                    #0.5*defn.dijkstra_monster_map.array[tile.x][tile.y])
+                #avoid other objects - we'll disable this for now
+               # for obj in defn.objects:
+              #      if obj.blocks:
+                  #      dijkstra_map.array[obj.x][obj.y] += 1
+                    
+            return dijkstra_map.get_next_step(self.owner.x,self.owner.y)
 
+        #ai for allies
+        if self.owner.creature.alignment == 'player':
+
+            player_weight = 0
+            fov_weight = 0
+            monster_weight = 1
+
+            if not self.can_detect_player():
+            #if the monster isn't close enough to sense the player, it makes a beeline straight for the player.
+                player_weight = 1.5
+
+            for tile in defn.dungeon_unblocked_list:
+                dijkstra_map.array[tile.x][tile.y] = (
+                    defn.dijkstra_player_map.array[tile.x][tile.y] * player_weight +
+                    defn.dijkstra_fov_map.array[tile.x][tile.y] * fov_weight +
+                    defn.dijkstra_monster_map.array[tile.x][tile.y] * monster_weight)
+                #avoid other objects
+                #for obj in defn.objects:
+                 #   if obj.blocks:
+                     #   dijkstra_map.array[obj.x][obj.y] += 1
+                        
 
 #personality consists of several components:
         #fear is an index that affects how much damage (just damage for now) the monster must take before it flees, proportional to its life. A fearless monster has 0.0 fear.
-        #
+        #sociability is an index indicating how much the monster wants to be near its allies.
+
+#senses affect the monster's ability to sense the world. Should be a number indicating distance
+        #sight requires LOS. Need to think more about how to implement. Probably uses straight-line distance and requires LOS, but I don't want to compute LOS for monsters.
+            #easiest way is to compute 2 LOS maps for player, one with infinite radius, and then just use the one
+            #with the larger radius for the monsters. Actually, I could do it with just one FOV map and distance checks for the player.
+        #smell at the moment affects how far away the monster can detect the player. I think a better implementation
+            #might be creating a map of the player's scent and updating it differently than the current dijkstra map
+            #algorithm - the player's scent could expand gradually. Or perhaps recalculating the map could occur gradually.
+            # such that information might be outdated. obviously you would not want to add the scent map unless scent was actually detected.
+        #want to implement sound, which could work in the same way that smell currently works (i.e. just considers steps to player)
 
 ai_dict = {}
 
-ai_dict['mindless'] = {
+ai_dict['zombie'] = {
     'personality' : {
-        'fear' : 0.0},
-    'traits' : ['mindless']}
+        'fear' : 0.0,
+        'sociability' : 0.0},
+    'traits' : ['mindless'],
+    'senses' : {
+        'sight' : 8,
+        'smell' : 6,
+        'hearing' : 8}}
 
-ai_dict['rational'] = {
+ai_dict['canine'] = {
     'personality' : {
-        'fear' : 0.5},
-    'traits' : []}
+        'fear' : 0.3,
+        'sociability' : 0.8},
+    'traits' : [''],
+    'senses' : {
+        'sight' : 7,
+        'smell' : 12,
+        'hearing' : 9}}
 
-ai_dict['scaredy-cat'] = {
-    'personality' : {
-        'fear' : 1.0},
-    'traits' : []}
+#ai_dict['scaredy-cat'] = {
+ #   'personality' : {
+  #      'fear' : 1.0},
+   # 'traits' : []}

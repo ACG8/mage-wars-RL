@@ -16,27 +16,30 @@ def cast_heal(parameters):
     defn.player.creature.heal(parameters['amount healed'])
 
 def scroll(parameters):
-        arg = sdic.spell_dict[parameters['spell']]
-        #looks at the string after the 10th character of the scroll's name to determine effect
-        spell = sdic.Spell(name = arg['name'], base_cost = 0, function = arg['function'], parameters = arg['parameters'])
-        if spell.cast(defn.player) == 'cancelled':
-            return 'cancelled'
-        #learn spell if casting succeeded
-        for your_spell in defn.spellbook:
-            if spell.name == your_spell.name:
-                your_spell.learn(1)
-                gui.message('You got better at casting ' + spell.name + '!', libtcod.white)
-                return
-        if len(defn.spellbook)<26:
-            spell.base_cost = arg['base cost']
-            spell.cost = arg['base cost'] * 3
-            defn.spellbook.append(spell)
-            gui.message('You learned how to cast ' + spell.name + '!' , libtcod.white)
-        else:
-            #long run, allow players to forget spells. Also, Mordok's tome to add extra capacity of 13 spells.
-            gui.message('Unfortunately, your spellbook is full.', libtcod.white)
+    #mothballing spell learning system. instead, scrolls function as one time uses of the spell, and require mana. I.E. only in very special cases are spells reusable.
+    spell = sdic.get_spell(parameters['spell'])
+    #arg = sdic.spell_dict[parameters['spell']]
+    #spell = sdic.Spell(name = arg['name'], base cost = arg['cost'], function = arg['function'], parameters = arg['parameters'])
+    #attempt to cast spell
+    if spell.cast(defn.player) == 'cancelled':
+        return 'cancelled'
 
-def create_item(name, x, y):
+def book(parameters):
+    #book for now teaches you how to cast a spell.
+    spell = sdic.get_spell(parameters['spell'])
+    if len(defn.spellbook)<26:
+        for known_spell in defn.spellbook:
+            if known_spell.name == spell.name:
+                gui.message('You already know how to cast' + spell.name + '!', libtcod.white)
+                return 'cancelled'    
+        defn.spellbook.append(spell)
+        gui.message('After careful study, you learn how to cast ' + spell.name + '!' , libtcod.white)
+    else:
+        #long run, allow players to forget spells. Also, Mordok's tome to add extra capacity of 13 spells.
+        gui.message('Unfortunately, your spellbook is full.', libtcod.white)
+        return 'cancelled'
+
+def get_item(name, x, y):
     arg = item_dict[name]
     item_component = obcl.Item(arg['function'], arg['parameters'])
     item = obcl.Object(x, y, arg['character'], arg['name'], arg['color'], description=arg['description'],
@@ -65,6 +68,15 @@ for spell in sdic.spell_dict:
         'function' : scroll,
         'parameters' : {
             'spell' : sdic.spell_dict[spell]['name']},
-        'description' : 'ow'}
+        'description' : 'Magic bound to words on paper, ready to be released when read. Good for one use only.'}
 
-
+for spell in sdic.spell_dict: 
+    item_dict['book of ' + sdic.spell_dict[spell]['name']] = {
+        'name' : 'book of ' + sdic.spell_dict[spell]['name'],
+        'character' : '#',
+        'spawn chance' : 50/ sdic.spell_dict[spell]['level'][0][1],  #will need to think about this part of the function
+        'color' : libtcod.lightest_green,
+        'function' : book,
+        'parameters' : {
+            'spell' : sdic.spell_dict[spell]['name']},
+        'description' : 'A detailed treatise on the workings of a single spell. By the time you finish reading it, casting that spell will be second nature to you.'}

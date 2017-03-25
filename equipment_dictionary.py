@@ -24,11 +24,18 @@ def get_all_equipped(obj):  #returns a list of equipped items
 
 equip_dict = {}
 
-def create_equipment(name, x, y):
+def get_equipment(name, x, y):
     arg = equip_dict[name]
+
+    attacks = []
+    if arg['attacks']:
+        for atk in arg['attacks']:
+            attacks.append(adic.get_attack(atk))
+    
     #generate defenses
     defense = adic.get_defense(arg['defense'])
-    equipment_component = obcl.Equipment(arg['slot'], arg['trait bonus'], arg['attacks'], defense)
+    
+    equipment_component = obcl.Equipment(arg['slot'], arg['trait bonus'], attacks, defense)
     equipment = obcl.Object(x, y, arg['character'], arg['name'], arg['color'], description=arg['description'],
         equipment=equipment_component, traits = arg['traits'])
     return equipment
@@ -41,7 +48,16 @@ equip_dict['vorpal blade'] = {
     'slot' : 'right hand',
     'traits' : [],
     'trait bonus' : [],
-    'attacks' : ['razor edged slash'],
+    'attacks' : [{
+        
+        'name' : 'razor edged slash',
+        'attack dice' : 4,
+        'traits' : [['piercing +', 2]],
+        'effects' : [],
+        'target type' : 'creature',
+        'range' : ['melee', 1],
+        'speed' : ['quick', 2]}],
+    
     'defense' : None,
     'description' : 'Razor Edged Slash:\nMelee 4\nPiercing +2\n\nThe blade is impossibly sharp...able to cut through bone and muscle with hardly any effort. How do you sheath it?'}
 
@@ -53,12 +69,23 @@ equip_dict['spiked buckler'] = {
     'slot' : 'left hand',
     'traits' : [],
     'trait bonus' : [],
-    'attacks' : ['shield bash'],
+    'attacks' : [{
+
+        'name' : 'shield bash',
+        'attack dice' : 3,
+        'traits' : [['piercing +', 1]],
+        'effects' : [],
+        'target type' : 'creature',
+        'range' : ['melee', 1],
+        'speed' : ['quick', 2]}],
+    
     'defense' : {
+        
         'minimum roll' : 8,
         'range' : 'melee',
         'max uses' : 1,
         'effect' : 'shield bash'},
+    
     'description' :'Shield Bash:\nMelee 3\nPiercing +1\n\nSometimes, the best offense is a good defense.'}
 
 equip_dict['leather boots'] = {
@@ -89,7 +116,7 @@ equip_dict['defense ring'] = {
     'name' : 'defense ring',
     'spawn chance' : 100,
     'character' : '.',
-    'color' : libtcod.blue,
+    'color' : libtcod.gold,
     'slot' : 'finger',
     'traits' : [],
     'trait bonus' : [['defense +',1]],

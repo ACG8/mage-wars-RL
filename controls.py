@@ -95,14 +95,14 @@ def handle_keys():
                         object.item.pick_up()
                         return
 
-            if key_char == 'a':
+            if key_char == 'i':
                 #show the inventory; if an item is selected, use it
                 chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
                 if chosen_item is not None:
                     if chosen_item.use() != 'cancelled':
                         return
 
-            if key_char == 'i':
+            if key_char == 'I':
                 #show the inventory; if an item is selected, describe it
                 chosen_item = inventory_menu('Press the key next to an item to examine it, or any other to cancel.\n')
                 if chosen_item is not None:
@@ -136,7 +136,7 @@ def handle_keys():
                     '\nExperience to level up: ' + str(level_up_xp) +
                     '\n\nLife: ' + str(defn.player.creature.max_hp) +
                     '\n\nMana Capacity: ' + str(defn.player.creature.max_mana) +
-                    '\nAttack: ' + str(defn.player.creature.active_attack.capitalize()) +
+                    '\nAttack: ' + str(defn.player.creature.active_attack.name.capitalize()) +
                     #'\nTraits: ' + str(defn.player.traits) + #; we'll leave this for a future date.
                     '\nArmor: ' + str(defn.player.creature.armor)
                     ,defn.CHARACTER_SCREEN_WIDTH)
@@ -151,20 +151,22 @@ def player_move_or_attack(dx, dy):
     #the coordinates the player is moving to/attacking
     x = defn.player.x + dx
     y = defn.player.y + dy
+
+    defn.player.creature.try_to_move(x,y)
  
     #try to find an attackable object there
-    target = None
-    for obj in defn.objects:
-        if obj.creature and obj.x == x and obj.y == y and obj != defn.player:
-            target = obj
-            break
+#    target = None
+ #   for obj in defn.objects:
+  #      if obj.creature and obj.x == x and obj.y == y and obj != defn.player:
+   #         target = obj
+    #        break
  
-    #attack if target found, move otherwise
-    if target:
-        defn.player.creature.attack(target, defn.player.creature.active_attack)
-        defn.player.creature.adjust_turn_counter(3)
-    else:
-        defn.player.move(dx, dy)
-        defn.fov_recompute = True
-        defn.player_location_changed = True
-        defn.player.creature.adjust_turn_counter(3)
+#    #attack if target found, move otherwise
+ #   if target:
+  #      defn.player.creature.attack(target, defn.player.creature.active_attack)
+   #     defn.player.creature.adjust_turn_counter(3)
+    #else:
+     #   defn.player.move(dx, dy)
+      #  defn.fov_recompute = True
+       # defn.player_location_changed = True
+        #defn.player.creature.adjust_turn_counter(3)

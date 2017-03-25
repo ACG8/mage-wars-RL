@@ -97,16 +97,7 @@ def new_game():
     #while chosen == None:
     index = gui.menu('Before your adventure begins, we need to know a little more about you. What sort of mage are you?', mgdic.mages, defn.SCHOOLS_WIDTH)
     mage = mgdic.mage_dict[mgdic.mages[index]]
-    defense = adic.get_defense(mage['defense'])
-    
-    creature_component = obcl.Creature(hp=mage['life'], mana=mage['mana'], channeling=mage['channeling'], armor=0, xp=0, attacks=mage['attacks'], defenses = [defense],
-        death_function=obcl.player_death)
-    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, traits=mage['traits'], blocks=True, creature=creature_component)
-    defn.player.level = 1
-
-    for spell in mage['spells']:
-        new_spell = sdic.get_spell(spell)
-        defn.spellbook.append(new_spell)
+    mgdic.create_player(mage, 0, 0)
 
     dgen.make_map()
     mpfn.initialize_fov()

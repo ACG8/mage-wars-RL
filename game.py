@@ -30,10 +30,12 @@ def render_all():
         libtcod.map_compute_fov(defn.fov_map, defn.player.x, defn.player.y, defn.TORCH_RADIUS, defn.FOV_LIGHT_WALLS, defn.FOV_ALGO)
 
         #go through all tiles, and set their background color according to the FOV
+        defn.visible_tiles = []
         for y in range(defn.MAP_HEIGHT):
             for x in range(defn.MAP_WIDTH):
                 #is it visible?
                 if not libtcod.map_is_in_fov(defn.fov_map, x, y):
+                    defn.visible_tiles.append(defn.dungeon[x][y])
                     #if it's not visible right now, the player can only see it if it's explored
                     if defn.dungeon[x][y].explored:
                     #it's out of the player's FOV
@@ -42,7 +44,11 @@ def render_all():
                     libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                     #it's visible
                     defn.dungeon[x][y].explored = True
-                
+    
+    #compute FOV dijkstra map
+    defn.dijkstra_fov_map = djks.Map(defn.visible_tiles)
+    defn.dijkstra_fov_map.compute_map()
+    
     render_objects()
 
     libtcod.console_blit(defn.con, 0, 0, defn.MAP_WIDTH, defn.MAP_HEIGHT, 0, 0, 0)
@@ -88,8 +94,8 @@ def play_game():
 
         #upkeep phase
         check_level_up()
-
-        defn.player.creature.adjust_turn_counter(-1)
+        #don't use adjust turn counter here, since that also triggers the upkeep function
+        defn.player.creature.turn_counter = max(defn.player.creature.turn_counter - 1,0)
  
         #if it is the player's turn, handle keys and exit game if needed
         if defn.player.creature.turn_counter == 0:
@@ -129,7 +135,7 @@ def play_game():
                             if defense:
                                 defense.reset()
                     #adjust turn counter before moving.
-                    obj.creature.adjust_turn_counter(-1)
+                    obj.creature.turn_counter = max(obj.creature.turn_counter - 1, 0)
                     if obj.creature.turn_counter == 0:
                         obj.ai.take_turn()
                     
