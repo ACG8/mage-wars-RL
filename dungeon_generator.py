@@ -178,8 +178,8 @@ def place_objects(room):
 def next_level():
     gui.message('You pass through the magical gate with some apprehension. The gate\'s magic heals and restores you.', libtcod.light_violet)
     #heal the player by 50%
-    defn.player.creature.heal(defn.player.creature.max_hp / 2)
     defn.player.creature.conditions = []
+    defn.player.creature.heal(defn.player.creature.max_hp)
     #increment the dungeon level
     defn.dungeon_level += 1
     #generate a new map

@@ -216,9 +216,6 @@ class Creature:
     def max_hp(self):  #return actual max_hp, by summing up the bonuses from all equipped items
         life_bonus = data.sum_values_from_list(self.owner.traits,'life +')
         #need to add function killing creature if its life is below its damage
-        for condition in self.conditions:
-            if condition == 'tainted':
-                life_bonus -= 3
         return self.base_max_hp + life_bonus
  
     @property
@@ -314,8 +311,14 @@ class Creature:
         #note: need to do periodic check, in case player loses life without taking damage
         hp_before = self.hp
         self.hp += amount
-        if self.hp > self.max_hp:
-            self.hp = self.max_hp
+
+        effective_max_life = self.max_hp
+        for condition in self.conditions:
+            if condition == 'tainted':
+                effective_max_life -= 3
+        
+        if self.hp > effective_max_life:
+            self.hp = effective_max_life
 
         if self.hp > hp_before and self.owner.is_visible:
             gui.message (self.owner.name.capitalize() + ' heals ' + str(self.hp - hp_before) + ' damage!', libtcod.turquoise)
@@ -326,6 +329,16 @@ class Creature:
             self.mana -= cost
         else:
             return 'cancelled'
+
+    def cast_spell(self, spell):
+        if self.mana >= spell.cost:
+            if spell.cast(self) != 'cancelled':
+                self.spend_mana(spell.cost)
+            else:
+                return 'cancelled'
+        else:
+            return 'cancelled'
+        
 
 def get_adjacent_tiles(x,y):
     #returns a list of non-blocked adjacent tiles, including current tile.

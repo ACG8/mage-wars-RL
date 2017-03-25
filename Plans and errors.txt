@@ -1,7 +1,0 @@
-- for items (controls, really), 'i' opens up the inventory, you select an object, and then select a use option.
-
--integrate equipment that can be put on more than one slot or on multiple slots.
-
-next : allow creatures to eat corpses? Of course, the ghoul does this... hmmm...
-
-- fix movement so that diagonal moves cost 1.41

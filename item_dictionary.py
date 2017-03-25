@@ -16,39 +16,49 @@ def cast_heal(parameters):
     defn.player.creature.heal(parameters['amount healed'])
 
 def scroll(parameters):
+    #a scroll will allow you to cast its spell (even if un/antitrained!) for free.
 
-    #new spell system: scrolls can be read to attempt to learn the spell (success rate of 100% for trained spells, 50% for untrained, and 33% for antitrained)
-    #wands (not books) allow you to cast the spell indefinitely, without learning it
-    #spells in the spellbook are actually dictionaries, with the name of the spell and all copies of it.
+    spell = sdic.get_spell(parameters['spell'])
+    if spell.cast(defn.player) != 'cancelled':
+        return 'succeeded'
+    else:
+        return 'cancelled'
+
+def book(parameters):
+
+    #lets you learn 1-6 copies of spell, depending on training and level.
+    copies = [4,2,1,1,0,0]
+
+    #this is not actually the spell instance that will go in your book - it is just a placeholder to find the properties
     spell = sdic.get_spell(parameters['spell'])
 
-    #if you are not trained in the spell, there is a chance that you may fail to learn it.
-    #If your level is less than the level of the spell, there is a chance you will fail to learn it. (will implement this later)
     if spell.properties['school'] in defn.antitraining:
-        if libtcod.random_get_int(0,1,100) > 33:
-            gui.message('The scroll crumbles as you read it. Unfortunately, you failed to learn ' + spell.name + '.', libtcod.light_red)
-            return 'failed'
-    elif spell.properties['school'] not in defn.training:
-        if libtcod.random_get_int(0,1,100) > 50:
-            gui.message('The scroll crumbles as you read it. Unfortunately, you failed to learn ' + spell.name + '.', libtcod.light_red)
-            return 'failed'
-        
+        copies = [2,1,0,0,0,0]
+    if spell.properties['school'] in defn.training:
+        copies = [6,4,2,2,1,1]
+
+    if copies[spell.properties['level']-1] == 0:
+        gui.message('Unfortunately, you are not skilled enough in the ' + spell.properties['school'] + ' school of magic to learn anything from this book.', libtcod.yellow)
+        return 'cancelled'
+    
     if len(defn.spellbook)<26:
         for known_spell in defn.spellbook:
             if known_spell['name'] == spell.name:
-                known_spell['copies'].append(spell)
-                gui.message('As you memorize the scroll, it crumbles to dust.', libtcod.green)
+                for i in range(copies[spell.properties['level']-1]):
+                    addspell = sdic.get_spell(parameters['spell'])
+                    known_spell['copies'].append(addspell)
+                gui.message('As you memorize the spells contained in the tome, it crumbles to dust.', libtcod.green)
                 return 'succeeded'
-        defn.spellbook.append({'name' : spell.name, 'copies' : [spell], 'reusable' : spell.properties['reusable']})
-        gui.message('As you memorize the scroll, it crumbles to dust.', libtcod.green)
+        spell_copies = []
+        for i in range(copies[spell.properties['level']-1]):
+            addspell = sdic.get_spell(parameters['spell'])
+            spell_copies.append(addspell)
+        defn.spellbook.append({'name' : spell.name, 'copies' : spell_copies, 'reusable' : spell.properties['reusable']})
+        gui.message('As you memorize the spells contained in the tome, it crumbles to dust.', libtcod.green)
         return 'succeeded'
     else:
         gui.message('Your spellbook is full.', libtcod.white)
         return 'cancelled'
-
-def book(parameters):
-    #will change book into wand. Players can't learn spells anymore.
-    return 'cancelled'
 
 def get_item(name, x, y):
     arg = item_dict[name]
@@ -83,12 +93,12 @@ for spell in sdic.spell_dict:
             'name' : 'scroll of ' + sdic.spell_dict[spell]['name'],
             'graphic' : '#',
             'color' : libtcod.lightest_yellow,
-            'description' : 'Magic bound to words on paper, ready to be released when read. Good for one use only.'}}
+            'description' : 'Magic bound to words on paper, ready to be released when read. Good for one use only. If you already have knowledge of the spell, you need pay no mana to use this.'}}
 
 for spell in sdic.spell_dict: 
     item_dict['book of ' + sdic.spell_dict[spell]['name']] = {
         
-        'spawn chance' : [{'level' : 1, 'value' : 0}],#50/ sdic.spell_dict[spell]['level'][0][1],  #will need to think about this part of the function
+        'spawn chance' : [{'level' : 1, 'value' : 50/ sdic.spell_dict[spell]['level'][0][1]}],  #will need to think about this part of the function
         'function' : book,
         'parameters' : {
             'spell' : sdic.spell_dict[spell]},

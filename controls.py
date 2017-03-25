@@ -73,63 +73,66 @@ def handle_keys():
                     defn.autoplaying = None
                     break
                     
-            #check if a key was pressed to stop autoplaying, then move.
-            if defn.key.vk == libtcod.KEY_NONE:
-                if defn.autoplaying == 'autoexplore':
+            #Move.
+
+            if defn.autoplaying == 'autoexplore':
+                    
                     #first check if standing on an item. If so, pick it up.
-                    for obj in defn.dungeon[defn.player.x][defn.player.y].objects:  #look for an item in the player's tile
-                        if obj.item:
-                            #we have an error where a full inventory will cause the player to remain on the same spot, continually trying to pick up the item.
-                            if obj.item.pick_up() == 'cancelled':
-                                defn.autoplaying == None
-                            return
+                for obj in defn.dungeon[defn.player.x][defn.player.y].objects:  #look for an item in the player's tile
+                    if obj.item and len(defn.inventory) < 26:
+                        #we have an error where a full inventory will cause the player to remain on the same spot, continually trying to pick up the item.
+                        if obj.item.pick_up() == 'cancelled':
+                            defn.autoplaying == None
+                        return
                     #compute fog of war (FOW) dijkstra map
-                    unexplored_tiles = []
-                    for y in range(defn.MAP_HEIGHT):
-                        for x in range(defn.MAP_WIDTH):
-                            if not defn.dungeon[x][y].explored:
-                                unexplored_tiles.append(defn.dungeon[x][y])
-                    #compute item map
-                    item_tiles = []
+                unexplored_tiles = []
+                for y in range(defn.MAP_HEIGHT):
+                    for x in range(defn.MAP_WIDTH):
+                        if not defn.dungeon[x][y].explored:
+                            unexplored_tiles.append(defn.dungeon[x][y])
+                    #if inventory is not full, compute item map
+                item_tiles = []
+                if len(defn.inventory) < 26:
                     for obj in defn.objects:
                         if obj.item and defn.dungeon[obj.x][obj.y].explored:
                             item_tiles.append(defn.dungeon[obj.x][obj.y])
 
                     #check whether any target squares were found
-                    dijkstra_autoexplore_map = djks.Map(unexplored_tiles + item_tiles)
-                    dijkstra_autoexplore_map.compute_map()
-                        #if there is a next point, move there, otherwise cancel autoplay:
-                    if dijkstra_autoexplore_map.array[defn.player.x][defn.player.y] < 999:
-                        destination = dijkstra_autoexplore_map.get_next_step(defn.player.x,defn.player.y)
-                        defn.player.creature.try_to_move(destination.x,destination.y)
-                        return
-                    else:
+                dijkstra_autoexplore_map = djks.Map(unexplored_tiles + item_tiles)
+                dijkstra_autoexplore_map.compute_map()
+                    #if there is a next point, move there, otherwise cancel autoplay:
+                if dijkstra_autoexplore_map.array[defn.player.x][defn.player.y] < 999:
+                    destination = dijkstra_autoexplore_map.get_next_step(defn.player.x,defn.player.y)
+                    defn.player.creature.try_to_move(destination.x,destination.y)
+                    return
+                else:
                         #cancel autoplay; we're done
-                        defn.autoplaying = None
-                elif defn.autoplaying == 'autoascend':
-                    #go up if standing on the portal
-                    if defn.stairs.x == defn.player.x and defn.stairs.y == defn.player.y:
-                        dgen.next_level()
-                        defn.autoplaying = None
-                        return
+                    defn.autoplaying = None
+            elif defn.autoplaying == 'autoascend':
+
+                #go up if standing on the portal
+                if defn.stairs.x == defn.player.x and defn.stairs.y == defn.player.y:
+                    dgen.next_level()
+                    defn.autoplaying = None
+                    return
                     #see if the portal is visible:
-                    portals = []
-                    for y in range(defn.MAP_HEIGHT):
-                        for x in range(defn.MAP_WIDTH):
-                            if defn.stairs in defn.dungeon[x][y].objects and defn.dungeon[x][y].explored:
-                                portals.append(defn.dungeon[x][y])
-                    if portals:
-                        dijkstra_autoascend_map = djks.Map(portals)
-                        dijkstra_autoascend_map.compute_map()
-                        destination = dijkstra_autoascend_map.get_next_step(defn.player.x,defn.player.y)
-                        defn.player.creature.try_to_move(destination.x,destination.y)
-                        return
+                portals = []
+                for y in range(defn.MAP_HEIGHT):
+                    for x in range(defn.MAP_WIDTH):
+                        if defn.stairs in defn.dungeon[x][y].objects and defn.dungeon[x][y].explored:
+                            portals.append(defn.dungeon[x][y])
+                if portals:
+                    dijkstra_autoascend_map = djks.Map(portals)
+                    dijkstra_autoascend_map.compute_map()
+                    destination = dijkstra_autoascend_map.get_next_step(defn.player.x,defn.player.y)
+                    defn.player.creature.try_to_move(destination.x,destination.y)
+                    return
                         #cancel autoplay; we're done
-                        defn.autoplaying = None
-                    else:
-                        #no portals found; cancel autoplay
-                        gui.message ('You have no idea where the nearest portal is.', libtcod.white)
-                        defn.autoplaying = None
+                    defn.autoplaying = None
+                else:
+                    #no portals found; cancel autoplay
+                    gui.message ('You have no idea where the nearest portal is.', libtcod.white)
+                    defn.autoplaying = None
                     
             else:
                 #stop autoexploring when a key is pressed.
@@ -150,6 +153,11 @@ def handle_keys():
                 return
             else:
                 gui.message ('No enemies in sight!', libtcod.white)
+
+        #cancel autoplay if any key is pressed
+
+        if defn.key.vk != libtcod.KEY_NONE:
+            defn.autoplaying = None
         
         #movement keys
         if defn.key.vk==libtcod.KEY_KP8:
@@ -221,11 +229,12 @@ def handle_keys():
                 #show the spellbook; if a spell is selected, use it
                 chosen_spell = spellbook_menu('Press the key next to a spell to cast it, or any other to cancel.\n')
                 if chosen_spell is not None:
-                    if chosen_spell['copies'][0].cast(defn.player) != 'cancelled' and not chosen_spell['reusable']:
-                        chosen_spell['copies'].remove(chosen_spell['copies'][0])
-                        if not chosen_spell['copies']:
+                    if defn.player.creature.cast_spell(chosen_spell['copies'][0]) != 'cancelled':
+                        if not chosen_spell['reusable']:
+                            chosen_spell['copies'].remove(chosen_spell['copies'][0])
+                            if not chosen_spell['copies']:
                             #remove empty spell lists
-                            defn.spellbook.remove(chosen_spell)
+                                defn.spellbook.remove(chosen_spell)
                     return
 
             if key_char == 'd':
@@ -240,17 +249,18 @@ def handle_keys():
                 if defn.stairs.x == defn.player.x and defn.stairs.y == defn.player.y:
                     dgen.next_level()
                     defn.autoplaying = None
-                #head toward portal
+                #head toward portal and then blank input key in preparation for override.
                 defn.autoplaying = 'autoascend'
+                defn.key.vk = libtcod.KEY_NONE
 
             if key_char == 'o':
-                #initialize autoexplore
+                #initialize autoexplore and then blank input key in preparation for override.
                 defn.autoplaying = 'autoexplore'
+                defn.key.vk = libtcod.KEY_NONE
 
             if key_char == 'c':
                 #show character information
                 #first, compute traits
-                        #now we need to combine like traits
                 traits_inc = []
                 appended_traits = []
                 for trait in defn.player.traits:
@@ -272,6 +282,22 @@ def handle_keys():
                         traits += '\n   ' + trait[0].capitalize()
                     else:
                         traits += '\n   ' + trait[0].capitalize() + str(trait[1])
+
+                #next, compute conditions
+
+                conditions_inc = []
+                appended_conditions = []
+                for condition in defn.player.creature.conditions:
+                    if condition not in appended_conditions:
+                        conditions_inc.append([condition,data.count_instances_in_list(defn.player.creature.conditions,condition)])
+                        appended_conditions.append(condition)
+
+                conditions = ''
+
+                for condition in conditions_inc:
+                    conditions += '\n   ' + condition[0].capitalize() + ' (' + str(condition[1]) + ')'
+                        
+                
                 level_up_xp = defn.LEVEL_UP_BASE + defn.player.properties['level'] * defn.LEVEL_UP_FACTOR
                 gui.msgbox('Character Information\n\nLevel: ' + str(defn.player.properties['level']) +
                     '\nExperience: ' + str(defn.player.creature.xp) +
@@ -279,8 +305,8 @@ def handle_keys():
                     '\n\nLife: ' + str(defn.player.creature.max_hp) +
                     '\nMana Capacity: ' + str(defn.player.creature.max_mana) +
                     '\n\nAttack: ' + str(defn.player.creature.active_attack.name.capitalize()) +
-                    '\n\nTraits:' + traits #; we'll leave this for a future date.
-                    #'\nArmor: ' + str(defn.player.creature.armor) #we probably don't need to display armor, since that is handled by the traits
+                    '\n\nTraits:' + traits +
+                    '\n\nConditions' + conditions
                     ,defn.CHARACTER_SCREEN_WIDTH)
 
             if key_char == 'w':
@@ -296,20 +322,3 @@ def player_move_or_attack(dx, dy):
     y = defn.player.y + dy
 
     defn.player.creature.try_to_move(x,y)
- 
-    #try to find an attackable object there
-#    target = None
- #   for obj in defn.objects:
-  #      if obj.creature and obj.x == x and obj.y == y and obj != defn.player:
-   #         target = obj
-    #        break
- 
-#    #attack if target found, move otherwise
- #   if target:
-  #      defn.player.creature.attack(target, defn.player.creature.active_attack)
-   #     defn.player.creature.adjust_turn_counter(3)
-    #else:
-     #   defn.player.move(dx, dy)
-      #  defn.fov_recompute = True
-       # defn.player_location_changed = True
-        #defn.player.creature.adjust_turn_counter(3)

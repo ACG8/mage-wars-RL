@@ -64,7 +64,7 @@ mons_dict = {}
 mons_dict['goblin grunt'] = {
     'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 0}],
+        {'level' : 2, 'value' : 10}],
     'life' : 4,
     'mana' : 0,
     'channeling' : 0,
@@ -94,7 +94,7 @@ mons_dict['goblin grunt'] = {
 mons_dict['zombie crawler'] = {
     'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 0}],
+        {'level' : 2, 'value' : 10}],
     'life' : 4,
     'mana' : 0,
     'channeling' : 0,
@@ -124,7 +124,7 @@ mons_dict['zombie crawler'] = {
 mons_dict['bitterwood fox'] = {
     'spawn chance' : [
         {'level' : 1, 'value' : 30},
-        {'level' : 2, 'value' : 0}],
+        {'level' : 2, 'value' : 20}],
         
     'life' : 5,
     'mana' : 0,
@@ -184,8 +184,8 @@ mons_dict['emerald tegu'] = {
 
 mons_dict['death\'s head scorpion'] = {
     'spawn chance' : [
-        {'level' : 2, 'value' : 100},
-        {'level' : 3, 'value' : 300}],
+        {'level' : 2, 'value' : 10},
+        {'level' : 3, 'value' : 30}],
     'life' : 6,
     'mana' : 0,
     'channeling' : 0,

@@ -1,0 +1,10 @@
+Fix issue where cancelling a spell causes nearby enemies to vanish.
+Note: this error is difficult to reproduce. Not sure what conditions are.
+
+If you cancel/have error while autoplaying you get an error upon continuing
+
+Error in loading where some items are not on object list.
+
+Allow item stacking (perhaps only for items, not equipment). Use same system as spell stacking. Might want to define a function for this.
+
+For future: when implementing status removal, make sure that removing tainted also removes damage from taint.

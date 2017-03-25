@@ -141,6 +141,10 @@ def play_game():
                     obj.creature.turn_counter = max(obj.creature.turn_counter - 1, 0)
                     if obj.creature.turn_counter == 0:
                         obj.ai.take_turn()
+
+        #cancel autoplay if key is pressed
+        if defn.autoplaying and defn.key.vk != libtcod.KEY_NONE:
+            defn.autoplaying = None
                     
 def check_level_up():
     #see if the player's experience is enough to level-up

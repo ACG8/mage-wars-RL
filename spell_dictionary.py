@@ -98,14 +98,10 @@ class Spell:
             gui.message('The ' + self.name + ' cannot be used.')
             return 'cancelled'
         else:
-            #use function must always have an argument of the name
-            if source.creature.mana >= self.cost:
-                if self.function(self.parameters) != 'cancelled':
-                    source.creature.spend_mana(self.cost)
-                else:
-                    return 'cancelled'
-            else:
+            if self.function(self.parameters) == 'cancelled':
                 return 'cancelled'
+            else:
+                return 'successful'
 
     #reduce the price of the spell as you become more familiar with it
     def learn(self, amount):
@@ -142,11 +138,12 @@ spell_dict['lightning bolt'] = {
         'traits' : [['lightning'],['ethereal']],
         'effects' : [[['daze'],6],[['stun'],8]],
         'target type' : 'creature',
-        'range' : {'type' : 'melee', 'distance' : 9},
+        'range' : {'type' : 'ranged', 'distance' : 9},
         'speed' : {'type' : 'quick', 'turns' : 1}},
     
     'properties' : {
         'school' : 'air',
+        'level' : 2,
         'reusable' : False},
     'description' :'blah,blah'}
 
@@ -163,11 +160,12 @@ spell_dict['invisible fist'] = {
         'traits' : [['ethereal']],
         'effects' : [[['daze'],8]],
         'target type' : 'creature',
-        'range' : {'type' : 'melee', 'distance' : 6},
+        'range' : {'type' : 'ranged', 'distance' : 6},
         'speed' : {'type' : 'quick', 'turns' : 1}},
     
     'properties' : {
         'school' : 'mind',
+        'level' : 1,
         'reusable' : False},
     'description' :'Mordok invented the spell as an easy way to enforce discipline amongst his apprentices'}
 
@@ -184,6 +182,7 @@ spell_dict['minor heal'] = {
         'conditions removed' : None},
     'properties' : {
         'school' : 'holy',
+        'level' : 1,
         'reusable' : False},
     'description' : '\"No scratch is insignificant to the Goddess\"\n -On Health and Blessings True'}
 
@@ -200,5 +199,6 @@ spell_dict['heal'] = {
         'conditions removed' : None},
     'properties' : {
         'school' : 'holy',
+        'level' : 2,
         'reusable' : False},
     'description' : 'blah blah'}

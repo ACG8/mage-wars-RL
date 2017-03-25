@@ -19,3 +19,11 @@ def max_value_from_list(target_list, desired_element):
 
 def distance (x1,y1,x2,y2):
     return math.sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
+
+def count_instances_in_list(target_list, desired_element):
+    value = 0
+    if target_list:
+        for thing in target_list:
+            if thing == desired_element:
+                value += 1
+    return value

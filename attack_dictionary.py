@@ -104,9 +104,13 @@ class Attack:
                 #for now, don't worry about poison immunity.
                 for effect in effects:
                     #long term should probably define a class of conditions or something so I don't have to maintain a list of what constitutes a condition.
-                    if effect in ['rot','weak','burn','tainted']:
+                    if effect in ['rot','weak','burn']:
                         gui.message (source.name.capitalize() + ' inflicts ' + effect + ' on ' + target.name + '!', libtcod.purple)
-                        target.creature.conditions.append(effect)                        
+                        target.creature.conditions.append(effect)
+                    if effect == 'tainted':
+                        gui.message (source.name.capitalize() + 's\' attack taints ' + target.name + '!', libtcod.purple)
+                        target.creature.conditions.append('tainted')
+                        target.creature.take_damage(3)
 
             #resolve counterstrikes. currently just takes the first counterstriking attack it finds.
             #note that counterstrikes currently use up time

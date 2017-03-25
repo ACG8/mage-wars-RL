@@ -15,10 +15,13 @@ class Map:
 
     #here's the plan for optimization: we simply vary the order in which tiles are scanned. Let's try alternating back and forth. If necessary, we can alternate up and down as well.
 
+    #all right, to optimize further we will change the procedure so that the map only cycles once. Imperfect, but fast.
         
     def compute_map(self):
 
-        self.array = [[ 999999
+        #don't reset all values, but do reset zeros (since otherwise they cannot change). We can do this simply by adding 1 to every value
+
+        self.array = [[ self.array[x][y] + 1
             for y in range(defn.MAP_HEIGHT)]
                 for x in range(defn.MAP_WIDTH)]
 
@@ -73,7 +76,7 @@ class Map:
                             change = True
             if not change:
                 break
-
+            
     def lowest_neighbor_value(self,x,y):
         neighbors = []
         for tile in defn.dungeon[x][y].adjacent_tiles:
