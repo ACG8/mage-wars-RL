@@ -22,28 +22,8 @@ class Ai:
     def take_turn(self):
         #a basic monster takes its turn. If you can see it, it can see you
         monster = self.owner
-        # and monster.creature:
-        player_weight = 1
-        if self.owner.creature.hp <= self.owner.creature.max_hp * self.personality['fear']:
-                player_weight = -1
-            #move towards player if far away; slow creatures move every other turn, randomly (will change). Need to fix monster-corpse problem again with monster.creature check
-        if True: #monster.distance_to(defn.player) >= 2 or player_weight == -1:
-            destination = self.find_best_move()
-            monster.creature.try_to_move(destination.x,destination.y)
-            #monster.move_towards(destination.x, destination.y)
-            #monster.creature.adjust_turn_counter(3)
-            #if monster.traits:
-             #   if ['fast'] in monster.traits:
-              #      monster.creature.adjust_turn_counter(-1)
-               # if ['slow'] in monster.traits:
-                #    monster.creature.adjust_turn_counter(1)
-                        
-            #close enough, attack! (if the player is still alive.)
-      #  elif defn.player.creature.hp > 0 and self.alignment != 'player':
-            #odd occasional error where monster.creature is none_type; again, the issue of the monster becoming a corpse rears its head. Must find more elegant solution.
-                #current solution - attacking is the last thing the monster does.
-       #     monster.creature.adjust_turn_counter(3)
-        #    monster.creature.attack(defn.player,monster.creature.active_attack)
+        destination = self.find_best_move()
+        monster.creature.try_to_move(destination.x,destination.y)
 
     def find_best_move(self):
         #Scans surrounding tiles, weights them, and returns the best one. Currently just evaluates distance between tile and player. x and y are the current location from which the best move is being computed.
@@ -62,7 +42,8 @@ class Ai:
         if self.owner.creature.alignment == 'dungeon':
 
             player_weight = 0.0
-            fov_weight = 0.0
+            #prefers to stay out of FOV if possible.
+            fov_weight = 0.1
 
             dijkstra_map = djks.Map([])
             if self.can_detect_player():
@@ -88,9 +69,11 @@ class Ai:
         #ai for allies
         if self.owner.creature.alignment == 'player':
 
-            player_weight = 0
-            fov_weight = 0
+            player_weight = 0.0
+            fov_weight = 0.0
             monster_weight = 1
+
+            dijkstra_map = djks.Map([])
 
             if not self.can_detect_player():
             #if the monster isn't close enough to sense the player, it makes a beeline straight for the player.
@@ -101,6 +84,8 @@ class Ai:
                     defn.dijkstra_player_map.array[tile.x][tile.y] * player_weight +
                     defn.dijkstra_fov_map.array[tile.x][tile.y] * fov_weight +
                     defn.dijkstra_monster_map.array[tile.x][tile.y] * monster_weight)
+
+            return dijkstra_map.get_next_step(self.owner.x,self.owner.y)
                 #avoid other objects
                 #for obj in defn.objects:
                  #   if obj.blocks:

@@ -46,7 +46,10 @@ def get_monster(name, x, y):
     ai = arg['ai']
     
     ai_component = aidic.Ai(ai['personality'],ai['traits'], ai['senses'])#aidic.ai_dict['traits'])
-    monster = obcl.Object(x, y, arg['character'], arg['name'], arg['color'], traits=arg['traits'], description=arg['description'],
+    monster = obcl.Object(
+        x, y,
+        traits = arg['traits'],
+        properties = arg['properties'].copy(), #it is necessary to copy the dictionary, else all creatures will use the same dictionary.
         blocks=True, creature=creature_component, ai=ai_component)
     return monster
 
@@ -57,10 +60,7 @@ def get_monster(name, x, y):
 mons_dict = {}
 
 mons_dict['goblin grunt'] = {
-    'name' : 'goblin grunt',
-    'spawn chance' : mpfn.from_dungeon_level([[30, 1],[15,3]]),
-    'character' : 'g',
-    'color' : libtcod.light_red,
+    'spawn chance' : mpfn.from_dungeon_level([[40, 1],[15,3]]),
     'life' : 4,
     'mana' : 0,
     'channeling' : 0,
@@ -69,25 +69,26 @@ mons_dict['goblin grunt'] = {
     'traits' : [],
     'attacks' : [{
         
-        'name' : 'basic melee attack',
+        'name' : 'shortsword',
         'attack dice' : 3,
         'traits' : [],
         'effects' : [],
         'target type' : 'creature',
-        'range' : ['melee',1],
-        'speed' : {
-            'type' : 'quick',
-            'turns' : 2}}],
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
     
     'defense' : None,
     'ai' : aidic.ai_dict['canine'],
-    'description' : 'Grunt, grunt.'}
+    'properties' : {
+        'name' : 'goblin grunt',
+        'graphic' : 'g',
+        'color' : libtcod.light_red,
+        'level' : 1,
+        'subtypes' : ['goblin', 'soldier'],
+        'description' : 'The frontline troops of the Warlord are determined and enthusiastic, but easily killed with the first hit.'}}
 
 mons_dict['zombie crawler'] = {
-    'name' : 'zombie crawler',
-    'spawn chance' : mpfn.from_dungeon_level([[30, 1],[15,3]]),
-    'character' : 'z',
-    'color' : libtcod.light_red,
+    'spawn chance' : mpfn.from_dungeon_level([[40, 1],[15,3]]),
     'life' : 4,
     'mana' : 0,
     'channeling' : 0,
@@ -101,20 +102,21 @@ mons_dict['zombie crawler'] = {
         'traits' : [],
         'effects' : [],
         'target type' : 'creature',
-        'range' : ['melee',1],
-        'speed' : {
-            'type' : 'quick',
-            'turns' : 2}}],
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
     
     'defense' : None,
     'ai' : aidic.ai_dict['zombie'],
-    'description' : 'Watch where you step! Those half-corpses are still alive!'}
+    'properties' : {
+        'name' : 'zombie crawler',
+        'graphic' : 'z',
+        'color' : libtcod.light_red,
+        'level' : 1,
+        'subtypes' : ['undead','zombie'],
+        'description' : 'Watch where you step! Those half-corpses are still alive!'}}
 
 mons_dict['bitterwood fox'] = {
-    'name' : 'bitterwood fox',
-    'spawn chance' : mpfn.from_dungeon_level([[20, 1],[20,2]]),
-    'character' : 'f',
-    'color' : libtcod.light_red,
+    'spawn chance' : mpfn.from_dungeon_level([[30, 1],[50,2]]),
     'life' : 5,
     'mana' : 0,
     'channeling' : 0,
@@ -123,29 +125,30 @@ mons_dict['bitterwood fox'] = {
     'traits' : [['fast']],
     'attacks' : [{
         
-        'name' : 'basic melee attack',
+        'name' : 'bite',
         'attack dice' : 3,
         'traits' : [],
         'effects' : [],
         'target type' : 'creature',
-        'range' : ['melee',1],
-        'speed' : {
-            'type' : 'quick',
-            'turns' : 2}}],
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
     
     'defense' : None,
     'ai' : aidic.ai_dict['canine'],
-    'description' : 'foo'}
+    'properties' : {
+        'name' : 'bitterwood fox',
+        'graphic' : 'f',
+        'color' : libtcod.light_red,
+        'level' : 1,
+        'subtypes' : ['animal', 'canine'],
+        'description' : 'foo'}}
 
 mons_dict['emerald tegu'] = {
-    'name' : 'emerald tegu',
-    'spawn chance' : mpfn.from_dungeon_level([[20, 1],[20,2]]),
-    'character' : 't',
-    'color' : libtcod.green,
-    'life' : 9,
+    'spawn chance' : mpfn.from_dungeon_level([[20,2]]),
+    'life' : 8,
     'mana' : 0,
     'channeling' : 0,
-    'armor' : 2,
+    'armor' : 3,
     'experience' : 35,
     'traits' : [],
     'attacks' : [{
@@ -153,22 +156,59 @@ mons_dict['emerald tegu'] = {
         'name' : 'venomous bite',
         'attack dice' : 3,
         'traits' : [],
-        'effects' : [[['rot'],9]],
+        'effects' : [[['rot'],8]],
         'target type' : 'creature',
-        'range' : ['melee',1],
-        'speed' : {
-            'type' : 'quick',
-            'turns' : 2}}],
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
     
     'defense' : None,
     'ai' : aidic.ai_dict['canine'],
-    'description' : 'foo'}
+    'properties' : {
+        'name' : 'emerald tegu',
+        'graphic' : 't',
+        'color' : libtcod.dark_chartreuse,
+        'level' : 2,
+        'subtypes' : ['animal', 'reptile'],
+        'description' : 'foo'}}
+
+mons_dict['death\'s head scorpion'] = {
+    'spawn chance' : mpfn.from_dungeon_level([[20,2]]),
+    'life' : 6,
+    'mana' : 0,
+    'channeling' : 0,
+    'armor' : 4,
+    'experience' : 60,
+    'traits' : [],
+    'attacks' : [{
+        
+        'name' : 'deadly stinger',
+        'attack dice' : 1,
+        'traits' : [['piercing +',2]],
+        'effects' : [[['tainted','tainted'],8]],
+        'target type' : 'creature',
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'full', 'turns' : 4}},{
+
+        'name' : 'pinchers',
+        'attack dice' : 3,
+        'traits' : [],
+        'effects' : [],
+        'target type' : 'creature',
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
+    
+    'defense' : None,
+    'ai' : aidic.ai_dict['canine'],
+    'properties' : {
+        'name' : 'death\'s head scorpion',
+        'graphic' : 's',
+        'color' : libtcod.black,
+        'level' : 2,
+        'subtypes' : ['insect'],
+        'description' : '\"Rajan created its mark as a warning. One many do not heed.\"'}}
 
 mons_dict['darkfenne hydra'] = {
-    'name' : 'darkfenne hydra',
-    'spawn chance' : mpfn.from_dungeon_level([[5, 1],[15,3]]),
-    'character' : 'H',
-    'color' : libtcod.dark_red,
+    'spawn chance' : mpfn.from_dungeon_level([[15,3]]),
     'life' : 15,
     'mana' : 0,
     'channeling' : 0,
@@ -182,21 +222,23 @@ mons_dict['darkfenne hydra'] = {
         'traits' : [['triplestrike']],
         'effects' : [],
         'target type' : 'creature',
-        'range' : ['melee', 1],
-        'speed' : {
-            'type' : 'full',
-            'turns' : 4}},{
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'full', 'turns' : 4}},{
 
         'name' : 'snapping bite',
         'attack dice' : 4,
         'traits' : [['counterstrike']],
         'effects' : [],
         'target type' : 'creature',
-        'range' : ['melee', 1],
-        'speed' : {
-            'type' : 'quick',
-            'turns' : 2}}],
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}],
 
     'defense' : None,
     'ai' : aidic.ai_dict['canine'],
-    'description' : 'uh oh'}
+    'properties' : {
+        'name' : 'darkfenne hydra',
+        'graphic' : 'H',
+        'color' : libtcod.dark_red,
+        'level' : 4,
+        'subtypes' : ['serpent'],
+        'description' : 'uh oh'}}

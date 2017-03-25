@@ -11,18 +11,25 @@ import monster_dictionary as mdic
 import item_dictionary as idic
 import equipment_dictionary as edic
 import dijkstra as djks
-import data_methods as data
             
 def make_map():
  
     #the list of objects with just the player
-    #defn.objects = [defn.player]
+    defn.objects = [defn.player]
  
     #fill map with "blocked" tiles
     defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.grey, True)
         for y in range(defn.MAP_HEIGHT) ]
             for x in range(defn.MAP_WIDTH) ]
-            
+
+    #clear unexplored list
+    defn.unexplored_tiles = []
+
+    #set unexplored list to list of tiles
+    for y in range(defn.MAP_HEIGHT):
+        for x in range(defn.MAP_WIDTH):
+            defn.unexplored_tiles.append(defn.dungeon[x][y])
+    
     rooms = []
     num_rooms = 0
 
@@ -85,10 +92,15 @@ def make_map():
             num_rooms += 1
 
     #create stairs at the center of the last room
-    defn.stairs = obcl.Object(new_x, new_y, '<', 'stairs', libtcod.white, always_visible=True)
-    #defn.objects.append(defn.stairs)
-    defn.dungeon[defn.stairs.x][defn.stairs.y].objects.append(defn.stairs)
-    data.send_to_back(defn.stairs, defn.dungeon[defn.stairs.x][defn.stairs.y].objects)  #so it's drawn below the monsters
+    defn.stairs = obcl.Object(new_x, new_y,
+        always_visible=True,
+        properties = {
+            'name' : 'portal',
+            'graphic' : '<',
+            'color' : libtcod.white,
+            'description' : 'portal to the next level'})
+    defn.objects.append(defn.stairs)
+    defn.stairs.send_to_back()  #so it's drawn below the monsters
 
     #clear list of dungeon tiles
 
@@ -105,7 +117,6 @@ def make_map():
 
 #populate each new room with objects
 
-
 def place_objects(room):
 
     #choose random number of monsters
@@ -119,9 +130,9 @@ def place_objects(room):
         if not mpfn.is_blocked(x, y):
             #choose a random monster from the dictionary
             arg = rng.random_choice(mdic.mons_dict)
-            monster = mdic.get_monster(arg['name'],x,y)
+            monster = mdic.get_monster(arg['properties']['name'],x,y)
             #add new monster to the game
-            #defn.objects.append(monster)
+            defn.objects.append(monster)
             defn.dungeon[x][y].objects.append(monster)
 
     max_room_equipment = mpfn.from_dungeon_level([[1, 1], [2, 4], [3, 6]])
@@ -137,13 +148,12 @@ def place_objects(room):
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
             arg = rng.random_choice(edic.equip_dict)
-            equipment = edic.get_equipment(arg['name'],x,y)
+            equipment = edic.get_equipment(arg['properties']['name'],x,y)
             equipment.always_visible = True
 
-            #defn.objects.append(equipment)
-            
+            defn.objects.append(equipment)
+            equipment.send_to_back()
             defn.dungeon[x][y].objects.append(equipment)
-            data.send_to_back(equipment, defn.dungeon[x][y].objects)
 
     max_room_items = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
 
@@ -158,19 +168,19 @@ def place_objects(room):
         #only place it if the tile is not blocked
         if not mpfn.is_blocked(x, y):
             arg = rng.random_choice(idic.item_dict)
-            item = idic.get_item(arg['name'],x,y)
+            item = idic.get_item(arg['properties']['name'],x,y)
             item.always_visible = True
 
-            #defn.objects.append(item)
-            defn.dungeon[x][y].objects.append(item)
-            data.send_to_back(item, defn.dungeon[x][y].objects)
+            defn.objects.append(item)
+            item.send_to_back()
+            defn.dungeon[x][y].objects.append(item)   
 
 #advance to the next level
 def next_level():
-    gui.message('You pass through the magical gate with some apprehension. The gate\'s magic heals you.', libtcod.light_violet)
+    gui.message('You pass through the magical gate with some apprehension. The gate\'s magic heals and restores you.', libtcod.light_violet)
     #heal the player by 50%
     defn.player.creature.heal(defn.player.creature.max_hp / 2)
-    gui.message('You find yourself in an unfamiliar part of the dungeon.', libtcod.red)
+    defn.player.creature.conditions = []
     #increment the dungeon level
     defn.dungeon_level += 1
     #generate a new map

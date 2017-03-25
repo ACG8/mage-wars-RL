@@ -95,9 +95,34 @@ def new_game():
 
     chosen = None
     #while chosen == None:
+
+    name = ''
+    (width, height) = (50, 5)
+    while True:
+        libtcod.console_flush()
+        window = libtcod.console_new(width, height)
+        libtcod.console_set_default_foreground(window, libtcod.white)
+        libtcod.console_print_rect_ex(window, 0, 0, width, height, libtcod.BKGND_NONE, libtcod.LEFT, 'What is your name?\n\n' + name.capitalize() + '\n\n(press *Enter* to continue)')
+        (x, y) = (defn.SCREEN_WIDTH/2 - width/2, defn.SCREEN_HEIGHT/2 - height/2)
+        libtcod.console_blit(window, 0, 0, width, height, 0, x, y, 1.0, 0.7)
+        libtcod.console_flush()
+        key = libtcod.console_wait_for_keypress(True)
+        index = key.c - ord('a')
+        if index in range(26):
+            name += chr(key.c)
+        elif len(name) > 0:
+            if key.c == 8:
+                name = name[:-1]
+            if key.c == 13:
+                break
+        gui.clear_screen()
+    
+    gui.clear_screen()
+    
     index = gui.menu('Before your adventure begins, we need to know a little more about you. What sort of mage are you?', mgdic.mages, defn.SCHOOLS_WIDTH)
     mage = mgdic.mage_dict[mgdic.mages[index]]
     mgdic.create_player(mage, 0, 0)
+    defn.player.personal_name = name
 
     dgen.make_map()
     mpfn.initialize_fov()
@@ -106,7 +131,8 @@ def new_game():
  
     defn.game_state = 'playing'
     defn.player_location_changed = True
-
+    defn.autoexploring = False
+    gui.message ('Press *?* for a list of commands', libtcod.white)
     game.render_all()
 
     # can add initialization tests here:   

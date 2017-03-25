@@ -15,14 +15,10 @@ import title_screen as tit
 import dijkstra as djks
 
 def render_objects():
-    
-    for y in range(defn.MAP_HEIGHT):
-        for x in range(defn.MAP_WIDTH):
-            if defn.dungeon[x][y].objects:
-                for obj in defn.dungeon[x][y].objects:
-                    if obj != defn.player and (obj.always_visible or libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y)) :
-                        obj.draw()
-
+    #need to fix so that corpses,items,monsters,player are drawn in that order
+    for obj in defn.objects:
+        if obj != defn.player and (obj.always_visible or libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y)) :
+            obj.draw()
     #player is always rendered last
     defn.player.draw()
 
@@ -48,12 +44,15 @@ def render_all():
                     libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                     #it's visible
                     defn.dungeon[x][y].explored = True
-                #now we render the objects on that tile:
-
+                    if defn.dungeon[x][y] in defn.unexplored_tiles:
+                        defn.unexplored_tiles.remove(defn.dungeon[x][y])
+    
     #compute FOV dijkstra map
+        #visible tiles is wrong - the list is of invisible tiles
+            #rather than putting this in render loop, let's only do this when things change.
     defn.dijkstra_fov_map = djks.Map(defn.visible_tiles)
     defn.dijkstra_fov_map.compute_map()
-                            
+    
     render_objects()
 
     libtcod.console_blit(defn.con, 0, 0, defn.MAP_WIDTH, defn.MAP_HEIGHT, 0, 0, 0)
@@ -72,16 +71,17 @@ def render_all():
         y += 1
  
     #show the player's stats
-    gui.render_bar(1, 1, defn.BAR_WIDTH, 'Life', defn.player.creature.hp, defn.player.creature.max_hp,
+    gui.render_bar(1, 2, defn.BAR_WIDTH, 'Life', defn.player.creature.hp, defn.player.creature.max_hp,
         libtcod.dark_red, libtcod.darkest_red)
 
-    gui.render_bar(1, 3, defn.BAR_WIDTH, 'Mana', defn.player.creature.mana, defn.player.creature.max_mana,
+    gui.render_bar(1, 4, defn.BAR_WIDTH, 'Mana', defn.player.creature.mana, defn.player.creature.max_mana,
         libtcod.dark_violet, libtcod.darkest_violet)
 
     #long term, divide message panel again to make room for a monster stats box
     #display names of objects under the mouse
+    libtcod.console_print_ex(defn.stats_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, defn.player.name.capitalize() + ', ' + defn.player.properties['name'].capitalize())
     libtcod.console_set_default_foreground(defn.stats_panel, libtcod.light_gray)
-    libtcod.console_print_ex(defn.stats_panel, 1, 4, libtcod.BKGND_NONE, libtcod.LEFT, gui.get_names_under_mouse())
+    libtcod.console_print_ex(defn.stats_panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, gui.get_names_under_mouse())
  
     #blit the panels to the root console 0
     libtcod.console_blit(defn.message_panel, 0, 0, defn.MSG_WIDTH, defn.MSG_HEIGHT, 0, defn.MSG_X, defn.MSG_Y)
@@ -125,7 +125,7 @@ def play_game():
         #let monsters take their turn
         monsters = []
         for obj in defn.objects:
-            if obj.ai:
+            if obj.creature and obj.ai and obj.creature.alignment != 'player':
                 monsters.append(obj)
 
         defn.dijkstra_monster_map = djks.Map(monsters)
@@ -146,17 +146,18 @@ def play_game():
                     
 def check_level_up():
     #see if the player's experience is enough to level-up
-    level_up_xp = defn.LEVEL_UP_BASE + defn.player.level * defn.LEVEL_UP_FACTOR
+    level_up_xp = defn.LEVEL_UP_BASE + defn.player.properties['level'] * defn.LEVEL_UP_FACTOR
     if defn.player.creature.xp >= level_up_xp:
         #it is! level up
-        defn.player.level += 1
+        defn.player.properties['level'] += 1
         defn.player.creature.xp -= level_up_xp
-        gui.message('You reached level ' + str(defn.player.level) + '!', libtcod.yellow)
+        gui.message('You reached level ' + str(defn.player.properties['level']) + '!', libtcod.yellow)
         choice = None
         while choice == None:  #keep asking until a choice is made
             choice = gui.menu('Level up! Choose a stat to raise:\n',
                 ['+4 Life, from ' + str(defn.player.creature.base_max_hp),
-                '+5 Mana Capacity, from ' + str(defn.player.creature.base_max_mana)
+                '+5 Mana Capacity, from ' + str(defn.player.creature.base_max_mana),
+                '+1 Channeling, from ' + str(defn.player.creature.channeling)
                 ], defn.LEVEL_SCREEN_WIDTH)
  
         if choice == 0:
@@ -166,3 +167,6 @@ def check_level_up():
         elif choice == 1:
             defn.player.creature.base_max_mana += 5
             defn.player.creature.mana +=5
+
+        elif choice == 2:
+            defn.player.creature.channeling += 1

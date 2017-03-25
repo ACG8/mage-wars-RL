@@ -46,14 +46,14 @@ def menu(header, options, width):
     y = header_height
     letter_index = ord('a')
     for option_text in options:
-        text = '(' + chr(letter_index) + ') ' + option_text
+        text = '(' + chr(letter_index) + ') ' + option_text.capitalize()
         libtcod.console_print_ex(window, 0, y, libtcod.BKGND_NONE, libtcod.LEFT, text)
         y += 1
         letter_index += 1
 
    #blit the contents of "window" to the root console
-    x = defn.SCREEN_WIDTH/2 - width/2
-    y = defn.SCREEN_HEIGHT/2 - height/2
+    (x, y) = (defn.SCREEN_WIDTH/2 - width/2, defn.SCREEN_HEIGHT/2 - height/2)
+    
     libtcod.console_blit(window, 0, 0, width, height, 0, x, y, 1.0, 0.7)
 
     #present the root console to the player and wait for a key-press
@@ -89,11 +89,20 @@ def get_names_under_mouse():
  
     #return a string with the names of all objects under the mouse
     (x, y) = (defn.mouse.cx, defn.mouse.cy)
-    
-    #create a list with the names of all objects at the mouse's coordinates and in FOV
-    names = [obj.name for obj in defn.objects
-        if obj.x == x and obj.y == y and libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y)]
 
-    names = ', '.join(names)  #join the names, separated by commas
+    names = []
+
+    #check whether (x,y) is actually on the map
+    if x in range(defn.MAP_WIDTH) and y in range(defn.MAP_HEIGHT):
+        for obj in defn.dungeon[x][y].objects:
+            if obj.creature and not obj == defn.player:
+                if obj.creature.alignment == 'player':
+                    names.append(('Friendly ' + obj.name + ' (' + str(obj.creature.hp) + '/' + str(obj.creature.max_hp) + ')').capitalize())
+                else:
+                    names.append((obj.name + ' (' + str(obj.creature.hp) + '/' + str(obj.creature.max_hp) + ')').capitalize())
+            else:
+                names.append(obj.name.capitalize())
+
+    names = '\n'.join(names)  #join the names, each in its own line
     
-    return names.capitalize()
+    return names

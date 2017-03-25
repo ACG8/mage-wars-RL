@@ -34,7 +34,7 @@ class Attack:
         if target.creature.defenses:
             defense_choices = []
             for defense in target.creature.defenses:
-                if defense and defense.uses > 0 and (defense.range == self.range[0] or defense.range == 'any'):
+                if defense and defense.uses > 0 and (defense.range == self.range['type'] or defense.range == 'any'):
                     defense_choices.append(defense)
             if defense_choices:
                 defense = random.choice(defense_choices)
@@ -104,7 +104,7 @@ class Attack:
                 #for now, don't worry about poison immunity.
                 for effect in effects:
                     #long term should probably define a class of conditions or something so I don't have to maintain a list of what constitutes a condition.
-                    if effect in ['rot','weak','burn']:
+                    if effect in ['rot','weak','burn','tainted']:
                         gui.message (source.name.capitalize() + ' inflicts ' + effect + ' on ' + target.name + '!', libtcod.purple)
                         target.creature.conditions.append(effect)                        
 
@@ -116,7 +116,7 @@ class Attack:
                 #long run find a better way to fix this problem
                 
         if target.creature:
-            if target.creature.attacks and self.range[0] == 'melee' and not self.is_counterstrike:
+            if target.creature.attacks and self.range['type'] == 'melee' and not self.is_counterstrike:
                 for attack in target.creature.attacks:
                     #currently returns the first counterattack it finds. special case for shield bash, rather than giving defenses effects
                     if (['counterstrike'] in attack.traits) or (attack.name == 'shield bash' and def_effect == 'shield bash'):
@@ -179,10 +179,8 @@ attk_dict['basic melee attack'] = {
     'traits' : [],
     'effects' : [],
     'target type' : 'creature',
-    'range' : ['melee',1],
-    'speed' : {
-        'type' : 'quick',
-        'turns' : 2}}
+    'range' : {'type' : 'melee', 'distance' : 1},
+    'speed' : {'type' : 'quick', 'turns' : 2}}
 
 #spell attacks
 
@@ -192,7 +190,5 @@ attk_dict['lightning bolt'] = {
     'traits' : [['lightning'],['ethereal']],
     'effects' : [[['daze'],6],[['stun'],8]],
     'target type' : 'creature',
-    'range' : ['ranged', 5],
-    'speed' : {
-        'type' : 'quick',
-        'turns' : 1}}
+    'range' : {'type' : 'melee', 'distance' : 1},
+    'speed' : {'type' : 'quick', 'turns' : 1}}

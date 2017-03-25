@@ -9,6 +9,7 @@ import action_classes as accl
 import game
 import spell_classes as spcl
 import spell_dictionary as sdic
+import time
 
 def cast_fireball(name):
     #ask the player for a target tile to throw a fireball at
@@ -57,8 +58,10 @@ def cast_lightning(name):
 ###may need to move these targeting functions
 def target_monster(max_range=None):
     gui.message('Left-click on target, or right-click to cancel.', libtcod.light_cyan)
-    rangemap = defn.fov_map
     #primitive function highlighting range. Ideally would be implemented in read-only attribute of tile
+
+        
+    rangemap = defn.fov_map
     libtcod.map_compute_fov(rangemap, defn.player.x, defn.player.y, max_range, defn.FOV_LIGHT_WALLS, defn.FOV_ALGO)
     for y in range(defn.MAP_HEIGHT):
         for x in range(defn.MAP_WIDTH):
@@ -66,7 +69,10 @@ def target_monster(max_range=None):
                 libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color * libtcod.lightest_green, libtcod.BKGND_SET)
     #returns a clicked monster inside FOV up to a range, or None if right-clicked
     while True:
+
+    
         (x, y) = target_tile(max_range)
+            
         if x is None:  #player cancelled
             #remove highlight
             for y in range(defn.MAP_HEIGHT):
@@ -76,8 +82,8 @@ def target_monster(max_range=None):
             return None
  
         #return the first clicked creature, otherwise continue looping
-        for obj in defn.objects:
-            if obj.x == x and obj.y == y and obj.creature:
+        for obj in defn.dungeon[x][y].objects:
+            if obj.creature:
                 #remove highlight
                 for y in range(defn.MAP_HEIGHT):
                     for x in range(defn.MAP_WIDTH):
@@ -94,7 +100,7 @@ def target_tile(max_range=None):
         game.render_all()
  
         (x, y) = (defn.mouse.cx, defn.mouse.cy)
- 
+
         #accept the target if the player clicked in FOV, and in case a range is specified, if it's in that range
         if (defn.mouse.lbutton_pressed and libtcod.map_is_in_fov(defn.fov_map, x, y) and
             (max_range is None or defn.player.distance(x, y) <= max_range)):
@@ -108,11 +114,11 @@ def closest_monster(max_range):
     closest_enemy = None
     closest_dist = max_range + 1  #start with (slightly more than) maximum range
  
-    for object in defn.objects:
-        if object.creature and not object == defn.player and libtcod.map_is_in_fov(defn.fov_map, object.x, object.y):
+    for obj in defn.objects:
+        if obj.creature and not obj == defn.player and libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y):
             #calculate distance between this object and the player
-            dist = defn.player.distance_to(object)
+            dist = defn.player.distance_to(obj)
             if dist < closest_dist:  #it's closer, so remember it
-                closest_enemy = object
+                closest_enemy = obj
                 closest_dist = dist
     return closest_enemy

@@ -3,10 +3,14 @@ import object_classes as obcl
 import libtcodpy as libtcod
 import definitions as defn
 import spell_dictionary as sdic
+import spell_functions as spfn
+import gui
 
 mages = [
+    'pellian forcemaster',
     'straywood beastmaster',
-    'pellian forcemaster']
+    'johktari beastmaster',
+    ]
 
 basic_attack = {
         
@@ -15,13 +19,10 @@ basic_attack = {
         'traits' : [['beastmaster']],
         'effects' : [],
         'target type' : 'creature',
-        'range' : ['melee',1],
-        'speed' : {
-            'type' : 'quick',
-            'turns' : 2}}
+        'range' : {'type' : 'melee', 'distance' : 1},
+        'speed' : {'type' : 'quick', 'turns' : 2}}
 
 def create_player(mage, x, y):
-    #arg = mage_dict[mage]
 
     #get players's attacks
     
@@ -36,9 +37,9 @@ def create_player(mage, x, y):
 
     #note: armor, xp is hardcoded as zero
     creature_component = obcl.Creature(
-        hp = mage['life'],
+        hp = mage['life'] - 10, #using MW values but adjusting for player's level
         mana = mage['mana'],
-        channeling = mage['channeling'],
+        channeling = mage['channeling'] - 4, #again, MW values adjusted. Player can regain over time
         armor = 0,
         xp = 0,
         attacks = attacks,
@@ -48,20 +49,24 @@ def create_player(mage, x, y):
     
     defn.player = obcl.Object(
         x, y,
-        char = '@',
-        name = 'player',
-        color = libtcod.white,
         traits=mage['traits'],
+        properties = {
+            'name' : mage['name'],
+            'graphic' : '@',
+            'color' : libtcod.white,
+            'level' : 2,
+            'subtypes' : None},
         blocks=True,
         creature=creature_component)
-    
-    defn.player.level = 1
+
     defn.training = mage['training']
     defn.antitraining = mage['antitraining']
 
     for spell in mage['spells']:
         new_spell = sdic.get_spell(spell)
-        defn.spellbook.append(new_spell)
+        #defn.spellbook.append(new_spell)
+        #for now, player has 1 copies. later, I'll change the way the spellbook works so that the player may have unlimited copies.
+        defn.spellbook.append({'name' : new_spell.name, 'copies' : [new_spell], 'reusable' : new_spell.properties['reusable']})
     
     return defn.player
     
@@ -91,6 +96,9 @@ mage_dict['pellian forcemaster'] = {
             'target type' : 'creature',
             'direction' : 'inward',
             'distance' : 3},
+        'properties' : {
+            'school' : 'mind',
+            'reusable' : True},
         'description' : '\"Come a little closer...\"'}],
     
     'training' : ['mind'],
@@ -98,15 +106,84 @@ mage_dict['pellian forcemaster'] = {
     'life' : 32,
     'mana' : 10,
     'channeling' : 10}
-    
+
+def tame_beast(parameters, source=None, target=None):
+    source=defn.player
+    if parameters['target type']=='none':
+        pass
+            #eventually, maybe we can upgrade so that everything in sight is converted.
+    elif parameters['target type']=='creature':
+            #find target. currently geared to ranged attacks, though can easily be extended to melee
+        target=spfn.target_monster(parameters['range'])
+        if target:
+            if target.creature.alignment == 'dungeon' and 'animal' in target.properties['subtypes']:
+                if defn.player.properties['level'] > target.properties['level']:
+                    health_percentage = float(target.creature.hp) / float(target.creature.max_hp)
+                    roll = libtcod.random_get_int(0,1,100) * health_percentage
+                    if roll < 10 * float(defn.player.properties['level'] - target.properties['level']):
+                        target.creature.alignment = 'player'
+                        target.creature.color = libtcod.white
+                        gui.message('The ' + target.name + ' submits to your will!', libtcod.green)
+                        return 'succeeded'
+                    else:
+                        gui.message('The ' + target.name + ' resists your attempts to tame it.', libtcod.red)
+                        return 'failed'
+                gui.message('You are not experienced enough to tame that.', libtcod.white)
+                return 'cancelled' 
+            gui.message('You cannot tame that!', libtcod.white)
+            return 'cancelled' 
+        else:
+            return 'cancelled'
+
+
 mage_dict['straywood beastmaster'] = {
     'name' : 'straywood beastmaster',
     'traits' : [['melee +', 1]],
     'attacks' : [basic_attack],
     'defense' : None,
-    'spells' : [],
+    'spells' : [{
+        
+        'name' : 'tame beast',
+        'level' : [['nature', 1]],
+        'base cost' : 1,
+        'type' : ['command'],
+        'function' : tame_beast,
+        'parameters' : {
+            'range' : 3,
+            'target type' : 'creature'},
+        'properties' : {
+            'school' : 'nature',
+            'reusable' : True},
+        'description' : 'Attempts to tame a nearby animal. Only animals with a level less than your own can be tamed. The more heavily wounded an animal is, the more likely it is to obey.'}],
+    
     'training' : ['nature'],
     'antitraining' : ['fire'],
     'life' : 36,
+    'mana' : 10,
+    'channeling' : 9}
+
+mage_dict['johktari beastmaster'] = {
+    'name' : 'johktari beastmaster',
+    'traits' : [['fast'],['ranged +',1]],
+    'attacks' : [basic_attack],
+    'defense' : None,
+    'spells' : [{
+        
+        'name' : 'tame beast',
+        'level' : [['nature', 1]],
+        'base cost' : 1,
+        'type' : ['command'],
+        'function' : tame_beast,
+        'parameters' : {
+            'range' : 3,
+            'target type' : 'creature'},
+        'properties' : {
+            'school' : 'nature',
+            'reusable' : True},
+        'description' : 'Attempts to tame a nearby animal. Only animals with a level less than your own can be tamed. The more heavily wounded an animal is, the more likely it is to obey.'}],
+    
+    'training' : ['nature'],
+    'antitraining' : ['fire'],
+    'life' : 34,
     'mana' : 10,
     'channeling' : 9}

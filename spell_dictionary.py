@@ -4,6 +4,9 @@ import spell_functions as spfn
 import definitions as defn
 import gui
 import libtcodpy as libtcod
+import map_functions as mpfn
+import time
+import game
 
 def pushing_spell(parameters, source=None, target=None):
     if source==None:
@@ -52,30 +55,38 @@ def healing_spell(parameters, source=None, target=None):
 def attack_spell(parameters, source=None, target=None):
     if source==None:
         source=defn.player
-        arg = adic.attk_dict[parameters['attack']]
-        if arg['target type']=='zone':
+        if parameters['target type']=='zone':
             spfn.target_tile(arg['name'])
             #placeholder for zone spells
-        elif arg['target type']=='none':
+        elif parameters['target type']=='none':
             pass
             #placeholder for untargetable spells, e.g. ring of fire
-        elif arg['target type']=='creature':
+        elif parameters['target type']=='creature':
             #find target. currently geared to ranged attacks, though can easily be extended to melee
-            target=spfn.target_monster(arg['range'][1])
+            target=spfn.target_monster(parameters['range']['distance'])
             if target:
             #use attack against target.
-                attack = adic.Attack(arg['name'], arg['attack dice'], arg['range'], arg['traits'], arg['effects'])
-                attack.declare_attack(source, target)
+
+                attack = adic.Attack(
+                    parameters['name'],
+                    parameters['attack dice'],
+                    parameters['range'],
+                    parameters['traits'],
+                    parameters['effects'],
+                    parameters['speed'])
+            #in future, will add ability to boost attack. Also, rather than generating an attack, the spell should explicitly have the attack instance when created.
+                attack.declare_attack(source, target, 0, 0)
             else:
                 return 'cancelled'
 
 class Spell:
-    def __init__(self, name, base_cost, function, parameters):
+    def __init__(self, name, base_cost, function, parameters, properties):
         self.name = name
         self.base_cost = base_cost
         #function indicates the general function to call. Parameters returns a dictionary used to define the parameters of the function.
         self.function = function
         self.parameters = parameters
+        self.properties = properties
 
     @property
     def cost(self):
@@ -110,7 +121,8 @@ def get_spell(dictionary):
         dictionary['name'],
         dictionary['base cost'],
         dictionary['function'],
-        dictionary['parameters'])
+        dictionary['parameters'],
+        dictionary['properties'])
     return spell
 
 spell_dict = {}
@@ -124,8 +136,40 @@ spell_dict['lightning bolt'] = {
     'type' : ['lightning'],
     'function' : attack_spell,
     'parameters' : {
-        'attack' : 'lightning bolt'},
+        
+        'name' : 'lightning bolt',
+        'attack dice' : 5,
+        'traits' : [['lightning'],['ethereal']],
+        'effects' : [[['daze'],6],[['stun'],8]],
+        'target type' : 'creature',
+        'range' : {'type' : 'melee', 'distance' : 9},
+        'speed' : {'type' : 'quick', 'turns' : 1}},
+    
+    'properties' : {
+        'school' : 'air',
+        'reusable' : False},
     'description' :'blah,blah'}
+
+spell_dict['invisible fist'] = {
+    'name' : 'invisible fist',
+    'level' : [['mind', 1]],
+    'base cost' : 4,
+    'type' : ['force'],
+    'function' : attack_spell,
+    'parameters' : {
+        
+        'name' : 'invisible fist',
+        'attack dice' : 4,
+        'traits' : [['ethereal']],
+        'effects' : [[['daze'],8]],
+        'target type' : 'creature',
+        'range' : {'type' : 'melee', 'distance' : 6},
+        'speed' : {'type' : 'quick', 'turns' : 1}},
+    
+    'properties' : {
+        'school' : 'mind',
+        'reusable' : False},
+    'description' :'Mordok invented the spell as an easy way to enforce discipline amongst his apprentices'}
 
 spell_dict['minor heal'] = {
     'name' : 'minor heal',
@@ -138,6 +182,9 @@ spell_dict['minor heal'] = {
         'target type' : 'creature',
         'amount healed' : sum([libtcod.random_get_int(0,0,2) for i in range(5)]),
         'conditions removed' : None},
+    'properties' : {
+        'school' : 'holy',
+        'reusable' : False},
     'description' : '\"No scratch is insignificant to the Goddess\"\n -On Health and Blessings True'}
 
 spell_dict['heal'] = {
@@ -151,4 +198,7 @@ spell_dict['heal'] = {
         'target type' : 'creature',
         'amount healed' : sum([libtcod.random_get_int(0,0,2) for i in range(8)]),
         'conditions removed' : None},
+    'properties' : {
+        'school' : 'holy',
+        'reusable' : False},
     'description' : 'blah blah'}

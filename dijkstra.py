@@ -12,9 +12,9 @@ class Map:
 
     #goals can be objects or tiles; only the location matters
 
-    #okay, new plan. Each map tile's dijkstra map is only computed as needed, but the maps are still associated with the tiles.
-    #The first time a tile is called, the algorithm runs; other times, it just uses what is already there.
-    #currently, square pattern. Later, maybe I'll make it rounded so that diagonal movements have a higher value
+    #here's the plan for optimization: we simply vary the order in which tiles are scanned. Let's try alternating back and forth. If necessary, we can alternate up and down as well.
+
+        
     def compute_map(self):
 
         self.array = [[ 999999
@@ -26,15 +26,14 @@ class Map:
 
         done = False
         
-        #avoid obstacles
-        #unblocked_list = defn.dungeon_unblocked_list
-        #for obj in defn.objects:
-         #   if obj.blocks and defn.dungeon[obj.x][obj.y] in unblocked_list:
-          #      unblocked_list.remove(defn.dungeon[obj.x][obj.y])
-        
         while not done:
             change = False
             for tile in defn.dungeon_unblocked_list:
+                minimum_neighbor = self.lowest_neighbor_value(tile.x,tile.y)
+                if self.array[tile.x][tile.y] > minimum_neighbor + 1:
+                    self.array[tile.x][tile.y] = minimum_neighbor + 1
+                    change = True
+            for tile in reversed(defn.dungeon_unblocked_list):
                 minimum_neighbor = self.lowest_neighbor_value(tile.x,tile.y)
                 if self.array[tile.x][tile.y] > minimum_neighbor + 1:
                     self.array[tile.x][tile.y] = minimum_neighbor + 1

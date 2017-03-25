@@ -8,7 +8,7 @@ import libtcodpy as libtcod
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
-MAP_WIDTH = 50 #80
+MAP_WIDTH = 48 #80
 MAP_HEIGHT = 38
 
 #Dungeon Generation
@@ -33,7 +33,7 @@ STATS_X = MAP_WIDTH
 
 MSG_Y = MAP_HEIGHT #
 MSG_X = 0 #BAR_WIDTH + 2
-MSG_WIDTH = SCREEN_WIDTH #SCREEN_WIDTH - BAR_WIDTH - 2
+MSG_WIDTH = SCREEN_WIDTH - 1 #SCREEN_WIDTH - BAR_WIDTH - 2
 MSG_HEIGHT = SCREEN_HEIGHT - MAP_HEIGHT # PANEL_HEIGHT - 1
 
 stats_panel = libtcod.console_new(STATS_WIDTH, STATS_HEIGHT)
@@ -86,6 +86,6 @@ key = libtcod.Key()
 fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
 fov_recompute = True
 dungeon_level = 1
-global player, training, antitraining, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon, dungeon_unblocked_list, player_location_changed
+global player, training, antitraining, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon, dungeon_unblocked_list, player_location_changed, autoexploring
 #define dijkstra maps
-global dijkstra_player_map, dijkstra_monster_map, dijkstra_fov_map, visible_tiles
+global dijkstra_player_map, dijkstra_monster_map, dijkstra_fov_map, dijkstra_fog_map, unexplored_tiles, visible_tiles

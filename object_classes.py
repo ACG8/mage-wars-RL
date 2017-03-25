@@ -14,17 +14,17 @@ import dijkstra as djks
 class Object:
     #this is a generic object: the player, a monster, an item, the stairs...
     #it's always represented by a character on screen.
-    def __init__(self, x, y, char, name, color, description=None, blocks=False, always_visible=False, creature=None, ai=None, item=None, equipment=None, traits=[]):
-
+    def __init__(self, x, y,
+                 blocks=False, always_visible=False,
+                 creature=None, ai=None, item=None, equipment=None,
+                 traits=[], properties = {}):
         self.always_visible = always_visible
-        self.name = name
+        self.personal_name = None
         self.blocks = blocks
         self.x = x
         self.y = y
-        self.char = char
-        self.color = color
-        self.description = description
         self.base_traits = traits
+        self.properties = properties
 
         self.creature = creature
         if self.creature:  #let the fighter component know who owns it
@@ -46,9 +46,16 @@ class Object:
             self.item.owner = self
 
     @property
-    def location(self):
-        #gives the tile the object is on right now
-        return defn.dungeon[self.x][self.y]
+    def name(self):
+        if self.personal_name:
+            return self.personal_name
+        else:
+            return self.properties['name']
+        
+
+    @property
+    def is_visible(self):
+        return (libtcod.map_is_in_fov(defn.fov_map, self.x, self.y) or self.always_visible)
 
     @property
     def traits(self):
@@ -58,13 +65,14 @@ class Object:
             for obj in bonus_sources:
                 bonus_traits += obj.trait_bonus
         traits = self.base_traits + bonus_traits
+                    
         return traits
 
     def describe(self):
         #render the screen. this erases the inventory and shows the names of objects under the mouse.
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
         game.render_all()
-        gui.msgbox(self.description)
+        gui.msgbox(self.properties['description'])
  
     def move(self, dx, dy):
         if not mpfn.is_blocked(self.x + dx, self.y + dy):
@@ -97,8 +105,8 @@ class Object:
         #set the color and then draw the character that represents this object at its position
         #only show if it's visible to the player; or it's set to "always visible" and on an explored tile
         if (libtcod.map_is_in_fov(defn.fov_map, self.x, self.y) or (self.always_visible and defn.dungeon[self.x][self.y].explored)):
-            libtcod.console_set_default_foreground(defn.con, self.color)
-            libtcod.console_put_char(defn.con, self.x, self.y, self.char, libtcod.BKGND_NONE)
+            libtcod.console_set_default_foreground(defn.con, self.properties['color'])
+            libtcod.console_put_char(defn.con, self.x, self.y, self.properties['graphic'], libtcod.BKGND_NONE)
             
     def clear(self):
         #erase the character that represents this object
@@ -125,6 +133,11 @@ class Object:
         dx = other.x - self.x
         dy = other.y - self.y
         return math.sqrt(dx ** 2 + dy ** 2)
+    
+    def send_to_back(self):
+        #make this object be drawn first, so all others appear above it if they're in the same tile.
+        defn.objects.remove(self)
+        defn.objects.insert(0, self)
 
     def distance(self, x, y):
         #return the distance to some coordinates
@@ -203,6 +216,10 @@ class Creature:
     @property
     def max_hp(self):  #return actual max_hp, by summing up the bonuses from all equipped items
         life_bonus = data.sum_values_from_list(self.owner.traits,'life +')
+        #need to add function killing creature if its life is below its damage
+        for condition in self.conditions:
+            if condition == 'tainted':
+                life_bonus -= 3
         return self.base_max_hp + life_bonus
  
     @property
@@ -225,6 +242,8 @@ class Creature:
             #upkeep effects
         rotted = False
         burned = False
+        #regenerate
+        self.heal(data.max_value_from_list(self.owner.traits, 'regenerate'))
         for condition in self.conditions:
             if condition == 'rot':
                 self.take_damage(1)
@@ -252,9 +271,9 @@ class Creature:
                     defn.player.creature.xp += self.xp
 
     def attack(self, target, attack):
-        if attack.range[0] == 'melee':
+        if attack.range['type'] == 'melee':
             dice_bonus = self.attack_bonus[0]
-        if attack.range[0] == 'ranged':
+        if attack.range['type'] == 'ranged':
             dice_bonus = self.attack_bonus[0]
         attack.dice_bonus = dice_bonus
         #0 is a placeholder - currently, there are no d12 bonuses. Eventually, will want separate function to compute bonuses
@@ -269,15 +288,14 @@ class Creature:
             #try to find an attackable object there
         if defn.dungeon[x][y].objects:
             for obj in defn.dungeon[x][y].objects:
-                if obj.creature and obj.x == x and obj.y == y and obj != self.owner:
+                if obj.creature and obj != self.owner:
                     if obj.creature.alignment != self.alignment:
                         #it's an enemy. attack it!
                         self.attack(obj, self.active_attack)
                         self.adjust_turn_counter(self.active_attack.speed['turns'])
                         return 'attack'
-                    elif obj.creature.alignment == self.alignment:
-                        #it's a friend. Swap places with it. Caution - I am worried about this resulting in infinite swaps, with creatures never getting anywhere.
-                        #ultimately, creatures should only be able to swap with lower level creatures, I think
+                    elif obj.creature.alignment == self.alignment and obj.properties['level'] < self.owner.properties['level']:
+                        #it's a friend. Swap places with it if it is of lower level.
                         self.owner.swap_places(obj)
                         return 'swap'
         #nothing there, so let's move there. Ultimately, I need to consolidate the timing system, probably into this function.
@@ -295,9 +313,13 @@ class Creature:
     def heal(self, amount):
         #heal by the given amount, without going over the maximum
         #note: need to do periodic check, in case player loses life without taking damage
+        hp_before = self.hp
         self.hp += amount
         if self.hp > self.max_hp:
             self.hp = self.max_hp
+
+        if self.hp > hp_before and self.owner.is_visible:
+            gui.message (self.owner.name.capitalize() + ' heals ' + str(self.hp - hp_before) + ' damage!', libtcod.turquoise)
 
     def spend_mana(self, cost):
         #spend mana if possible.
@@ -343,7 +365,8 @@ class Item:
             gui.message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
         else:
             defn.inventory.append(self.owner)
-            self.owner.location.objects.remove(self.owner)
+            defn.dungeon[self.owner.x][self.owner.y].objects.remove(self.owner)
+            defn.objects.remove(self.owner)
             gui.message('You picked up a ' + self.owner.name + '!', libtcod.green)
             #special case: automatically equip, if the corresponding equipment slot is unused
             equipment = self.owner.equipment
@@ -365,10 +388,12 @@ class Item:
 
     def drop(self):
         #add to the map and remove from the player's inventory. also, place it at the player's coordinates
-        self.owner.location.objects.append(self.owner)
+        defn.objects.append(self.owner)
         defn.inventory.remove(self.owner)
         self.owner.x = defn.player.x
         self.owner.y = defn.player.y
+        defn.dungeon[self.owner.x][self.owner.y].objects.append(self.owner)
+        #currently, brings the object to the front, which we don't want. Must change so that objects appear in proper order
         #special case: if the object has the Equipment component, dequip it before dropping
         if self.owner.equipment:
             self.owner.equipment.dequip()
@@ -412,19 +437,20 @@ def player_death(player):
     defn.game_state = 'dead'
  
     #for added effect, transform the player into a corpse!
-    defn.player.char = '%'
-    defn.player.color = libtcod.dark_red
+    defn.player.properties['graphic'] = '%'
+    defn.player.properties['color'] = libtcod.dark_red
  
 def monster_death(monster):
     #transform it into a nasty corpse! it doesn't block, can't be
     #attacked and doesn't move
+    #error - the change appears to affect all such dictionaries
     gui.message('The ' + monster.name + ' gurgles as its life-blood spills upon the sands!', libtcod.orange)
-    monster.char = '%'
-    monster.color = libtcod.dark_red
+    monster.properties['graphic'] = '%'
+    monster.properties['color'] = libtcod.dark_red
     monster.blocks = False
     monster.creature = None
     monster.ai = None
-    monster.name = 'remains of ' + monster.name
-    data.send_to_back(monster,defn.dungeon[monster.x][monster.y].objects)
+    monster.properties['name'] = 'remains of ' + monster.name
+    monster.send_to_back()
 
 

@@ -56,6 +56,20 @@ def is_blocked(x, y):
  
     return False
 
+def get_tiles_between(x1,y1,x2,y2):
+    tiles = []
+    #returns all tiles on the line between tile1 and tile2, including those tiles.
+    libtcod.line_init(x1,y1,x2,y2)
+    done = False
+    while not done:
+        (x,y) = libtcod.line_step()
+        if x and y:
+            tiles.append(defn.dungeon[x][y])
+        else:
+            done = True
+    return tiles
+        
+
 def get_map_as_array():
 
     array = [[ 1
@@ -66,5 +80,3 @@ def get_map_as_array():
         for x in range(defn.MAP_WIDTH):
             if defn.dungeon[x][y].blocked:
                 array[x][y] = -1
-
-    print array
