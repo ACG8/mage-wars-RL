@@ -29,9 +29,9 @@ def main_menu():
         #show the game's title, and some credits!
         libtcod.console_set_default_foreground(0, libtcod.light_yellow)
         libtcod.console_print_ex(0, defn.SCREEN_WIDTH/2, defn.SCREEN_HEIGHT/2-4, libtcod.BKGND_NONE, libtcod.CENTER,
-            'Etherian Chronicles')
+            'Mage Wars RL')
         libtcod.console_print_ex(0, defn.SCREEN_WIDTH/2, defn.SCREEN_HEIGHT-2, libtcod.BKGND_NONE, libtcod.CENTER,
-            'By ACG')
+            'A Roguelike Adventure by ACG')
  
         #show options and wait for the player's choice
         choice = gui.menu('', ['Play a new game', 'Continue last game', 'Quit'], 24)
@@ -40,12 +40,13 @@ def main_menu():
             new_game.new_game()
             game.play_game()
         if choice == 1:  #load last game
-            try:
-                load_game()
-            except:
-                msgbox('\n No saved game to load.\n', 24)
-                continue
-            game.play_game()
+            gui.msgbox('\n Sorry - I haven\'nt implemented a save/load feature yet.\n\n-ACG\n', 24)
+            #try:
+             #   load_game()
+            #except:
+             #   msgbox('\n No saved game to load.\n', 24)
+              #  continue
+            #game.play_game()
         elif choice == 2:  #quit
             break
     

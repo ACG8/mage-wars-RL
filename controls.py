@@ -214,7 +214,7 @@ def handle_keys():
                            '\nZ = examine a spell in your spellbook' +
                            '\nc = access information about your character' +
 
-                           '\n\nThe following keys may be used to interact with your environment.' +
+                           '\n\nThe following keys may be used to interact with your environment:' +
                            
                            '\n\n, = pick up item from current position' +
                            '\ni = use an item from your inventory'+
@@ -224,7 +224,8 @@ def handle_keys():
                            '\n\nTo avoid tedious repetition, you can automate certain tasks:' +
                            '\n\n< = travel to the nearest portal and pass through' +
                            '\no = autoexplore (press any key to stop exploring)' +
-                           '\nTAB = move towards/attack nearest enemy'
+                           '\nTAB = move towards/attack nearest enemy' +
+                           '\n\nYour objective on each level is to find the exit and ascend to the next level. Enemies will get more dangerous the further you go, so it will be to your advantage to pick up equipment that you find lying around.'
                            ,50)
 
             if key_char == 'i':
@@ -333,12 +334,12 @@ def handle_keys():
                     '\n\nConditions' + conditions
                     ,defn.CHARACTER_SCREEN_WIDTH)
 
-            if key_char == 'w':
+            #if key_char == 'w':
                 #defn.player.creature.heal(30)
                 #dgen.next_level()
-                defn.inventory.append(idic.get_item('scroll of animate dead',0,0))
-                defn.inventory.append(idic.get_item('scroll of heal',0,0))
-                defn.inventory.append(idic.get_item('scroll of minor heal',0,0))
+                #defn.inventory.append(idic.get_item('scroll of animate dead',0,0))
+                #defn.inventory.append(idic.get_item('scroll of heal',0,0))
+                #defn.inventory.append(idic.get_item('scroll of minor heal',0,0))
                 
             return 'didnt-take-turn'
 
