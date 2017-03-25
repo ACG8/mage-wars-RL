@@ -21,7 +21,7 @@ class Tile:
         #insane idea - why not define a static dijkstra map for every unblocked tile?
         #we create a list of objects that may be found on this tile.
         self.objects = []
-
+#note to self
     def compute_adjacent_tiles(self):
         neighbors = []
         for y in range(defn.MAP_HEIGHT):
