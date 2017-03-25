@@ -1,3 +1,9 @@
+import libtcodpy as libtcod
+
+#############################################
+# Static Values
+#############################################
+
 #actual size of the window
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
@@ -5,13 +11,15 @@ SCREEN_HEIGHT = 50
 MAP_WIDTH = 80
 MAP_HEIGHT = 43
 
-ROOM_MAX_SIZE = 10
-ROOM_MIN_SIZE = 6
-MAX_ROOMS = 10
+#Dungeon Generation
+ROOM_MAX_SIZE = 15
+ROOM_MIN_SIZE = 4
+MAX_ROOMS = 40
 
 LIMIT_FPS = 20  #20 frames-per-second maximum
 
-FOV_ALGO = 0  #default FOV algorithm
+#Line of Sight
+FOV_ALGO = 2  #shadowcasting FOV algorithm
 FOV_LIGHT_WALLS = True
 TORCH_RADIUS = 10
 
@@ -52,3 +60,22 @@ title_screen_choices = [
     'wizard_v_priestess.png',
     'druid_v_necromancer.png']
 
+con = libtcod.console_new(MAP_WIDTH, MAP_HEIGHT)
+panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
+
+mouse = libtcod.Mouse()
+key = libtcod.Key()
+
+#############################################
+# Variables
+#############################################
+
+game_msgs = []
+inventory = []
+spellbook = []
+objects = []
+fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
+fov_recompute = True
+dungeon = []
+dungeon_level = 1
+global player, stairs, game_state
