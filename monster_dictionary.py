@@ -62,9 +62,9 @@ def get_monster(name, x, y):
 mons_dict = {}
 
 mons_dict['goblin grunt'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 0}]),
+        {'level' : 2, 'value' : 0}],
     'life' : 4,
     'mana' : 0,
     'channeling' : 0,
@@ -92,9 +92,9 @@ mons_dict['goblin grunt'] = {
         'description' : 'The frontline troops of the Warlord are determined and enthusiastic, but easily killed with the first hit.'}}
 
 mons_dict['zombie crawler'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 0}]),
+        {'level' : 2, 'value' : 0}],
     'life' : 4,
     'mana' : 0,
     'channeling' : 0,
@@ -122,9 +122,9 @@ mons_dict['zombie crawler'] = {
         'description' : 'Watch where you step! Those half-corpses are still alive!'}}
 
 mons_dict['bitterwood fox'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 1, 'value' : 30},
-        {'level' : 2, 'value' : 0}]),
+        {'level' : 2, 'value' : 0}],
         
     'life' : 5,
     'mana' : 0,
@@ -153,9 +153,9 @@ mons_dict['bitterwood fox'] = {
         'description' : 'foo'}}
 
 mons_dict['emerald tegu'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 2, 'value' : 10},
-        {'level' : 3, 'value' : 30}]),
+        {'level' : 3, 'value' : 30}],
     'life' : 8,
     'mana' : 0,
     'channeling' : 0,
@@ -183,9 +183,9 @@ mons_dict['emerald tegu'] = {
         'description' : 'foo'}}
 
 mons_dict['death\'s head scorpion'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 2, 'value' : 100},
-        {'level' : 3, 'value' : 300}]),
+        {'level' : 3, 'value' : 300}],
     'life' : 6,
     'mana' : 0,
     'channeling' : 0,
@@ -221,9 +221,9 @@ mons_dict['death\'s head scorpion'] = {
         'description' : '\"Rajan created its mark as a warning. One many do not heed.\"'}}
 
 mons_dict['darkfenne hydra'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 3, 'value' : 5},
-        {'level' : 5, 'value' : 20}]),
+        {'level' : 5, 'value' : 20}],
     'life' : 15,
     'mana' : 0,
     'channeling' : 0,

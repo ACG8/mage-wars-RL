@@ -60,7 +60,7 @@ def get_item(name, x, y):
 item_dict = {}
 
 item_dict['healing potion'] = {
-    'spawn chance' : 100,
+    'spawn chance' : [{'level' : 1, 'value' : 100}],
     'function' : cast_heal,
     'parameters' : {
         'amount healed' : 5},
@@ -75,8 +75,7 @@ for spell in sdic.spell_dict:
     item_dict['scroll of ' + sdic.spell_dict[spell]['name']] = {
         
         
-        'spawn chance' : 100 / sdic.spell_dict[spell]['level'][0][1],  #will need to think about this part of the function
-
+        'spawn chance' : [{'level' : 1, 'value' : 100 / sdic.spell_dict[spell]['level'][0][1]}],  #will need to think about this part of the function
         'function' : scroll,
         'parameters' : {
             'spell' : sdic.spell_dict[spell]},
@@ -89,7 +88,7 @@ for spell in sdic.spell_dict:
 for spell in sdic.spell_dict: 
     item_dict['book of ' + sdic.spell_dict[spell]['name']] = {
         
-        'spawn chance' : 0,#50/ sdic.spell_dict[spell]['level'][0][1],  #will need to think about this part of the function
+        'spawn chance' : [{'level' : 1, 'value' : 0}],#50/ sdic.spell_dict[spell]['level'][0][1],  #will need to think about this part of the function
         'function' : book,
         'parameters' : {
             'spell' : sdic.spell_dict[spell]},

@@ -1,4 +1,5 @@
 import libtcodpy as libtcod
+import map_functions as mpfn
 
 def random_choice_index(chances):  #choose one option from list of chances, returning its index
     #the dice will land on some number between 1 and the sum of the chances
@@ -18,7 +19,7 @@ def random_choice_index(chances):  #choose one option from list of chances, retu
 def random_choice(chances_dict):
     #choose one option from dictionary of chances, returning its key
     choice = chances_dict.values()
-    chances = [choice[i]['spawn chance']
+    chances = [mpfn.from_dungeon_level(choice[i]['spawn chance'])
         for i in range(len(choice))]
     strings = chances_dict.keys()
     return chances_dict[strings[random_choice_index(chances)]]

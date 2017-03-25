@@ -42,7 +42,7 @@ def get_equipment(name, x, y):
     return equipment
 
 equip_dict['vorpal blade'] = {
-    'spawn chance' : 25,
+    'spawn chance' : [{'level' : 1, 'value' : 25}],
     'slot' : 'right hand',
     'traits' : [],
     'trait bonus' : [],
@@ -64,7 +64,7 @@ equip_dict['vorpal blade'] = {
         'description' : 'Razor Edged Slash:\nMelee 4\nPiercing +2\n\nThe blade is impossibly sharp...able to cut through bone and muscle with hardly any effort. How do you sheath it?'}}
 
 equip_dict['spiked buckler'] = {
-    'spawn chance' : 25,
+    'spawn chance' : [{'level' : 1, 'value' : 25}],
     'slot' : 'left hand',
     'traits' : [],
     'trait bonus' : [],
@@ -92,9 +92,9 @@ equip_dict['spiked buckler'] = {
         'description' :'Shield Bash:\nMelee 3\nPiercing +1\n\nSometimes, the best offense is a good defense.'}}
 
 equip_dict['leather boots'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 30}]),
+        {'level' : 2, 'value' : 30}],
     'slot' : 'feet',
     'traits' : [],
     'trait bonus' : [['armor +',1]],
@@ -108,9 +108,9 @@ equip_dict['leather boots'] = {
 
 equip_dict['leather gloves'] = {
 
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 30}]),
+        {'level' : 2, 'value' : 30}],
     'slot' : 'hands',
     'traits' : [],
     'trait bonus' : [['armor +',1]],
@@ -123,7 +123,7 @@ equip_dict['leather gloves'] = {
         'description' : 'Leather Gloves\n\nArmor +1\n\n\"Revolution does not wear silk gloves\"\n -Olkaff, Warlord of Woad'}}
 
 equip_dict['defense ring'] = {
-    'spawn chance' : 25,
+    'spawn chance' : [{'level' : 1, 'value' : 25}],
     'slot' : 'finger',
     'traits' : [],
     'trait bonus' : [['defense +',1]],
@@ -136,9 +136,9 @@ equip_dict['defense ring'] = {
         'description' : 'Defense Ring\n +1 to all Defenses\n\n\"Shields are so primitive. No need to sacrifice style for protection.\"\n -Xer, Arbiter of Eldritch Design'}}
 
 equip_dict['gauntlets of strength'] = {
-    'spawn chance' : mpfn.from_dungeon_level([
+    'spawn chance' : [
         {'level' : 1, 'value' : 40},
-        {'level' : 2, 'value' : 30}]),
+        {'level' : 2, 'value' : 30}],
     'slot' : 'hands',
     'traits' : [],
     'trait bonus' : [['melee +',1]],
