@@ -3,11 +3,14 @@ import libtcodpy as libtcod
 import object_classes as obcl
 import map_functions as mpfn
 import inventory_functions as infn
-import math
-import random
 import gui
+import attack_dictionary as adic
+import action_classes as accl
+import game
+import spell_classes as spcl
+import spell_dictionary as sdic
 
-def cast_fireball():
+def cast_fireball(name):
     #ask the player for a target tile to throw a fireball at
     gui.message('Left-click a target tile for the fireball, or right-click to cancel.', libtcod.light_cyan)
     (x, y) = target_tile()
@@ -19,7 +22,7 @@ def cast_fireball():
             gui.message('The ' + obj.name + ' gets burned for ' + str(defn.FIREBALL_DAMAGE) + ' hit points.', libtcod.orange)
             obj.creature.take_damage(defn.FIREBALL_DAMAGE)
 
-def cast_heal():
+def cast_heal(name):
     #heal the player
     if defn.player.creature.hp == defn.player.creature.max_hp:
         gui.message('You are already at full health.', libtcod.red)
@@ -28,7 +31,7 @@ def cast_heal():
     gui.message('Your wounds start to feel better!', libtcod.light_violet)
     defn.player.creature.heal(defn.HEAL_AMOUNT)
 
-def cast_confuse():
+def cast_confuse(name):
     #ask the player for a target to confuse
     gui.message('Left-click an enemy to confuse it, or right-click to cancel.', libtcod.light_cyan)
     monster = target_monster(defn.CONFUSE_RANGE)
@@ -39,19 +42,21 @@ def cast_confuse():
     monster.ai.owner = monster  #tell the new component who owns it
     gui.message('The eyes of the ' + monster.name + ' look vacant, as he starts to stumble around!', libtcod.light_green)
 
-def cast_lightning():
+def cast_lightning(name):
     #find closest enemy (inside a maximum range) and damage it
     monster = closest_monster(defn.LIGHTNING_RANGE)
     if monster is None:  #no enemy found within maximum range
         gui.message('No enemy is close enough to strike.', libtcod.red)
         return 'cancelled'
  
-    #zap it!
-    ##attack = (source, 'lightning bolt', 5)
-    ##attack.target_creature(source, monster)
+    #zap it! note: player hardcoded as source, need to change
+    attack_trait = adic.attk_dict['lightning bolt']
+    attack = accl.Attack(attack_trait[0], attack_trait[1], attack_trait[2], attack_trait[3])
+    attack.target_creature(defn.player, monster)
 
 ###may need to move these targeting functions
 def target_monster(max_range=None):
+    gui.message('Left-click an enemy to target it, or right-click to cancel.', libtcod.light_cyan)
     #returns a clicked monster inside FOV up to a range, or None if right-clicked
     while True:
         (x, y) = target_tile(max_range)
@@ -63,13 +68,33 @@ def target_monster(max_range=None):
             if obj.x == x and obj.y == y and obj.creature and obj != defn.player:
                 return obj
 
+def scroll(name):
+        sdic_list = sdic.spell_dict[name[10:]]
+        #looks at the string after the 10th character of the scroll's name to determine effect
+        spell = spcl.Spell(name=sdic_list[0], base_cost=0, use_function=sdic_list[3])
+        spell.cast(defn.player)
+        #learn spell
+        for your_spell in defn.spellbook:
+            if spell.name == your_spell.name:
+                your_spell.learn(1)
+                gui.message('You feel slightly more confident about casting ' + spell.name + '.', libtcod.white)
+                return
+        if len(defn.spellbook)<26:
+            spell.base_cost = sdic_list[2]
+            spell.cost = sdic_list[2] * 3
+            defn.spellbook.append(spell)
+            gui.message('You learned how to cast ' + spell.name + '!' , libtcod.white)
+        else:
+            #long run, allow players to forget spells. Also, Mordok's tome to add extra capacity of 13 spells.
+            gui.message('Unfortunately, your spellbook is full.', libtcod.white)
+
 def target_tile(max_range=None):
     #return the position of a tile left-clicked in player's FOV (optionally in a range), or (None,None) if right-clicked.
     while True:
         #render the screen. this erases the inventory and shows the names of objects under the mouse.
         libtcod.console_flush()
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,defn.key,defn.mouse)
-        render_all()
+        game.render_all()
  
         (x, y) = (defn.mouse.cx, defn.mouse.cy)
  

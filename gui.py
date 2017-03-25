@@ -4,7 +4,8 @@ import definitions as defn
 import title_screen as tit
 
 def msgbox(text, width=50):
-    menu(text, [], width)  #use menu() as a sort of "message box"
+    #use menu() as a sort of "message box"
+    menu(text, [], width)
 
 def message(new_msg, color = libtcod.white):
     #split the message if necessary, among multiple lines
@@ -86,4 +87,5 @@ def get_names_under_mouse():
         if obj.x == x and obj.y == y and libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y)]
 
     names = ', '.join(names)  #join the names, separated by commas
+    
     return names.capitalize()

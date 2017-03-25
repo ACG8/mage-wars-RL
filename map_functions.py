@@ -10,6 +10,8 @@ def initialize_fov():
     for y in range(defn.MAP_HEIGHT):
         for x in range(defn.MAP_WIDTH):
             libtcod.map_set_properties(defn.fov_map, x, y, not defn.dungeon[x][y].block_sight, not defn.dungeon[x][y].blocked)
+            
+    defn.fov_recompute = True
 
 def create_room(room):
     #go through the tiles in the rectangle and make them passable

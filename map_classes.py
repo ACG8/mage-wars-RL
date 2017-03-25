@@ -1,8 +1,14 @@
+import definitions as defn
+
 class Tile:
     #a tile of the map and its properties
-    def __init__(self, blocked, block_sight = None):
+    def __init__(self, x, y, blocked, block_sight = None):
+        self.x = x
+        self.y = y
         self.blocked = blocked
         self.explored = False
+        self.scent = 0
+        self.sound = 0
         #by default, if a tile is blocked, it also blocks sight
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight

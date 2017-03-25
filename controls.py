@@ -3,6 +3,11 @@ import definitions as defn
 import inventory_functions as infn
 import gui
 import dungeon_generator as dgen
+import action_classes as accl
+import attack_dictionary as adic
+import spell_functions as spfn
+import spell_classes as spcl
+import game
 
 def inventory_menu(header):
     #show a menu with each item of the inventory as an option
@@ -11,7 +16,7 @@ def inventory_menu(header):
     else:
         options = []
         for item in defn.inventory:
-            text = item.name
+            text = item.char + ' ' + item.name
             #show additional information, in case it's equipped
             if item.equipment and item.equipment.is_equipped:
                 text = text + ' (on ' + item.equipment.slot + ')'
@@ -29,8 +34,9 @@ def spellbook_menu(header):
         options = ['You don\'t know any spells.']
     else:
         options = []
+        #show spell names and mana costs
         for spell in defn.spellbook:
-            text = spell.name
+            text = str(spell.name) + ' (' + str(spell.cost) + ')'
             options.append(text)
  
     index = gui.menu(header, options, defn.SPELLBOOK_WIDTH)
@@ -90,25 +96,35 @@ def handle_keys():
                 for object in defn.objects:  #look for an item in the player's tile
                     if object.x == defn.player.x and object.y == defn.player.y and object.item:
                         object.item.pick_up()
-                        break
+                        return
 
-            if key_char == 'i':
+            if key_char == 'a':
                 #show the inventory; if an item is selected, use it
                 chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
                 if chosen_item is not None:
-                    chosen_item.use()
+                    chosen_item.use(chosen_item.owner.name)
+                    return
+
+            if key_char == 'i':
+                #show the inventory; if an item is selected, describe it
+                chosen_item = inventory_menu('Press the key next to an item to examine it, or any other to cancel.\n')
+                if chosen_item is not None:
+                    info = chosen_item.owner
+                    info.describe()
 
             if key_char == 'z':
                 #show the spellbook; if a spell is selected, use it
                 chosen_spell = spellbook_menu('Press the key next to a spell to cast it, or any other to cancel.\n')
                 if chosen_spell is not None:
-                    chosen_spell.use()
+                    chosen_spell.cast(defn.player)
+                    return
 
             if key_char == 'd':
                 #show the inventory; if an item is selected, drop it
                 chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
                 if chosen_item is not None:
                     chosen_item.drop()
+                    return
 
             if key_char == '<':
                 #go up stairs, if the player is on them
@@ -127,6 +143,9 @@ def handle_keys():
                     '\nArmor: ' + str(defn.player.creature.armor)
                     ,defn.CHARACTER_SCREEN_WIDTH)
 
+            if key_char == 'w':
+                print game.get_adjacent_tiles(defn.player.x,defn.player.y)
+                
             return 'didnt-take-turn'
 
 def player_move_or_attack(dx, dy):
@@ -144,6 +163,9 @@ def player_move_or_attack(dx, dy):
  
     #attack if target found, move otherwise
     if target is not None:
+        #key = adic.attk_dict['basic attack']
+        #attack = accl.Attack(key[0],key[1],key[2],key[3])
+        #attack.target_creature(defn.player, target)
         defn.player.creature.attack(target)
     else:
         defn.player.move(dx, dy)

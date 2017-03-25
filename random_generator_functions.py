@@ -17,7 +17,8 @@ def random_choice_index(chances):  #choose one option from list of chances, retu
 
 def random_choice(chances_dict):
     #choose one option from dictionary of chances, returning its key
-    chances = chances_dict.values()
+    choice = chances_dict.values()
+    chances = [choice[i][1]
+        for i in range(len(choice))]
     strings = chances_dict.keys()
-
-    return strings[random_choice_index(chances)]
+    return chances_dict[strings[random_choice_index(chances)]]

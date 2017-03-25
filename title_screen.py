@@ -9,6 +9,8 @@ import random
 import spell_functions as spfn
 import game
 import shelve
+import spell_classes as spcl
+import spell_dictionary as sdic
 
 def main_menu():
     img = libtcod.image_load(random.choice(defn.title_screen_choices))
@@ -72,10 +74,17 @@ def save_game():
     file.close()
 
 def new_game():
+
+    #clear lists
+    defn.game_msgs = []
+    defn.inventory = []
+    defn.spellbook = []
+    defn.objects = []
+    defn.dungeon = []
  
     #create object representing the player
-    creature_component = obcl.Creature(hp=30, mana=30, armor=0, power=3, xp=0, death_function=obcl.player_death)
-    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, blocks=True, creature=creature_component)
+    creature_component = obcl.Creature(hp=30, mana=30, armor=0, xp=0, attacks=['sword attack'], death_function=obcl.player_death)
+    defn.player = obcl.Object(0, 0, '@', 'player', libtcod.white, traits=[], blocks=True, creature=creature_component)
  
     defn.player.level = 1
  
@@ -87,16 +96,3 @@ def new_game():
  
     #a warm welcoming message!
     gui.message('Welcome to Etheria! May you last longer than your predecessor...', libtcod.red)
-
-    #initial spell: a lightning bolt
-    from action_classes import Spell
-    effect = spfn.cast_lightning()
-    spell = Spell('lightning bolt', source=defn.player, cost=1, use_function=effect)
-    defn.spellbook.append(spell)
-
-    #initial equipment: a dagger
-    #equipment_component = obcl.Equipment(slot='right hand', power_bonus=2)
-    #obj = Object(0, 0, '-', 'dagger', libtcod.sky, equipment=equipment_component)
-    #inventory.append(obj)
-    #equipment_component.equip()
-    #obj.always_visible = True

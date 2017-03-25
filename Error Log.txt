@@ -1,0 +1,3 @@
+need to implement slow better; make action system.
+need to find more efficient way to implement double/triplestrike
+next: integrate attack spells into the system

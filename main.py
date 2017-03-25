@@ -1,17 +1,6 @@
 import definitions as defn
 import libtcodpy as libtcod
-import object_classes as obcl
-import map_functions as mpfn
-import inventory_functions as infn
-import math
-import textwrap
-import random
-import gui
-import controls as ctrl
-import dungeon_generator as dgen
-import spell_functions as spfn
 import title_screen as tit
-import game
 
 #############################################
 # Initialization & Main Loop

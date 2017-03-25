@@ -9,11 +9,11 @@ SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
 MAP_WIDTH = 80
-MAP_HEIGHT = 43
+MAP_HEIGHT = 35
 
 #Dungeon Generation
-ROOM_MAX_SIZE = 15
-ROOM_MIN_SIZE = 4
+ROOM_MAX_SIZE = 9
+ROOM_MIN_SIZE = 5
 MAX_ROOMS = 40
 
 LIMIT_FPS = 20  #20 frames-per-second maximum
@@ -25,7 +25,7 @@ TORCH_RADIUS = 10
 
 #sizes and coordinates relevant for the GUI
 BAR_WIDTH = 20
-PANEL_HEIGHT = 7
+PANEL_HEIGHT = 15
 PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
 
 MSG_X = BAR_WIDTH + 2
@@ -53,6 +53,11 @@ LEVEL_SCREEN_WIDTH = 40
 
 CHARACTER_SCREEN_WIDTH = 30
 
+#ai
+#maximum tiles to seach when pathfinding
+MAX_TILE_SEARCH = 50
+
+
 #list of title screen graphics
 title_screen_choices = [
     'beastmaster_v_warlock.png',
@@ -67,15 +72,10 @@ mouse = libtcod.Mouse()
 key = libtcod.Key()
 
 #############################################
-# Variables
+# Global Variables
 #############################################
 
-game_msgs = []
-inventory = []
-spellbook = []
-objects = []
 fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
 fov_recompute = True
-dungeon = []
 dungeon_level = 1
-global player, stairs, game_state
+global player, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon

@@ -1,3 +1,0 @@
-- When entering a new level, FOV does not update until player takes a turn.
-- Level up grants health and mana
-- Need to find a way to put definable ais in dictionary (currently ai is hardcoded BasicMonster for all monsters)

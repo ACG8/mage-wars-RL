@@ -2,14 +2,18 @@ import definitions as defn
 import libtcodpy as libtcod
 import gui
 import math
+import random
 import inventory_functions as invfn
 import map_functions as mpfn
-import descriptions as descr
+import foo_dictionary as fdic
+import attack_dictionary as adic
+import action_classes as accl
+import game
 
 class Object:
     #this is a generic object: the player, a monster, an item, the stairs...
     #it's always represented by a character on screen.
-    def __init__(self, x, y, char, name, color, blocks=False, always_visible=False, creature=None, ai=None, item=None, equipment=None):
+    def __init__(self, x, y, char, name, color, description=None, blocks=False, always_visible=False, creature=None, ai=None, item=None, equipment=None, traits=[]):
 
         self.always_visible = always_visible
         self.name = name
@@ -18,6 +22,8 @@ class Object:
         self.y = y
         self.char = char
         self.color = color
+        self.description = description
+        self.traits = traits
 
         self.creature = creature
         if self.creature:  #let the fighter component know who owns it
@@ -37,6 +43,9 @@ class Object:
             #there must be an Item component for the Equipment component to work properly
             self.item = Item()
             self.item.owner = self
+
+    def describe(self):
+        gui.msgbox(self.description)
  
     def move(self, dx, dy):
         if not mpfn.is_blocked(self.x + dx, self.y + dy):
@@ -64,8 +73,12 @@ class Object:
  
         #normalize it to length 1 (preserving direction), then round it and
         #convert to integer so the movement is restricted to the map grid
-        dx = int(round(dx / distance))
-        dy = int(round(dy / distance))
+        if distance != 0:
+            dx = int(round(dx / distance))
+            dy = int(round(dy / distance))
+        else:
+            dx = 0
+            dy = 0
         self.move(dx, dy)
 
     def distance_to(self, other):
@@ -85,35 +98,62 @@ class Object:
 
 class Creature:
     #combat-related properties and methods (monster, player, NPC).
-    def __init__(self, hp, mana, armor, power, xp, death_function=None):
+    def __init__(self, hp, mana, armor, xp, attacks, death_function=None):
         self.death_function = death_function
         self.base_max_mana = mana
         self.mana = mana
         self.base_max_hp = hp
         self.hp = hp
         self.base_armor = armor
-        self.base_power = power
         self.xp = xp
+        self.attacks = attacks
 
+    #returns attack bonus to [melee, range]
     @property
-    def power(self):
-        bonus = sum(equipment.power_bonus for equipment in invfn.get_all_equipped(self.owner))
-        return self.base_power + bonus
+    def attack_bonus(self):
+        #compute melee bonus
+        melee_bonus = 0
+        range_bonus = 0
+        for trait in self.owner.traits:
+            if trait[0] == 'melee +':
+                melee_bonus += trait[1]
+            if trait[0] == 'range +':
+                range_bonus += trait[1]
+        return [melee_bonus, range_bonus]
 
     @property
     def armor(self):  #return actual armor, by summing up the bonuses from all equipped items
-        bonus = sum(equipment.armor_bonus for equipment in invfn.get_all_equipped(self.owner))
-        return self.base_armor + bonus
+        armor_bonus = 0
+        for trait in self.owner.traits:
+            if trait[0] == 'armor +':
+                armor_bonus += trait[1]
+        return self.base_armor + armor_bonus
 
     @property
-    def max_mana(self):  #return actual max_hp, by summing up the bonuses from all equipped items
-        bonus = sum(equipment.max_mana_bonus for equipment in invfn.get_all_equipped(self.owner))
-        return self.base_max_hp + bonus
+    def max_hp(self):  #return actual max_hp, by summing up the bonuses from all equipped items
+        life_bonus = 0
+        for trait in self.owner.traits:
+            if trait[0] == 'life +':
+                life_bonus += trait[1]
+        return self.base_max_hp + life_bonus
  
     @property
-    def max_hp(self):  #return actual max_hp, by summing up the bonuses from all equipped items
-        bonus = sum(equipment.max_hp_bonus for equipment in invfn.get_all_equipped(self.owner))
-        return self.base_max_hp + bonus
+    def max_mana(self):  #return actual max_hp, by summing up the bonuses from all equipped items
+        mana_bonus = 0
+        for trait in self.owner.traits:
+            if trait[0] == 'mana capacity +':
+                mana_bonus += trait[1]
+        return self.base_max_mana + mana_bonus
+
+#computes creature's traits along with traits acquired from equipment. Later will add traits acquired from other sources.
+    @property
+    def traits(self):
+        bonus_traits = []
+        for obj in get_all_equipped(self):
+            bonus_traits += obj.trait_bonus
+        print self.owner.traits + bonus_traits
+        return self.owner.traits + bonus_traits
+            
 
     def take_damage(self, damage):
         #apply damage if possible
@@ -128,9 +168,13 @@ class Creature:
                     defn.player.creature.xp += self.xp
 
     def attack(self, target):
-        from action_classes import Attack
-        attack = Attack(self, 'melee attack', self.power)
-        attack.target_creature(self, target)
+        arg = adic.attk_dict[self.attacks[0]]
+        if 'melee' in arg['range'][0]:
+            dice_bonus = self.attack_bonus[0]
+        if 'ranged' in ['range'][0]:
+            dice_bonus = self.attack_bonus[1]
+        attack = accl.Attack(arg['name'], arg['attack dice'], arg['traits'], arg['effects'], dice_bonus)
+        attack.target_creature(self.owner, target)
 
     def heal(self, amount):
         #heal by the given amount, without going over the maximum
@@ -152,14 +196,56 @@ class BasicMonster:
         monster = self.owner
         if libtcod.map_is_in_fov(defn.fov_map, monster.x, monster.y):
  
-            #move towards player if far away
+            #move towards player if far away; slow creatures move every other turn, randomly (will change)
             if monster.distance_to(defn.player) >= 2:
-                monster.move_towards(defn.player.x, defn.player.y)
+                tile_choice = find_best_move(monster.x,monster.y)
+                move_target = tile_choice
+                libtcod.console_set_char_background(defn.con, move_target.x, move_target.y, libtcod.blue, libtcod.BKGND_SET )
+                if not(libtcod.random_get_int(0, 0, 1)==1 and 'slow' in monster.traits):
+                    monster.move_towards(move_target.x, move_target.y)
+                #fast creatures move again
+                if ('fast' in monster.traits) and (monster.distance_to(defn.player) >= 2):
+                    monster.move_towards(defn.player.x, defn.player.y)
  
             #close enough, attack! (if the player is still alive.)
             elif defn.player.creature.hp > 0:
                 monster.creature.attack(defn.player)
 
+def find_best_move(x,y):
+    #Scans surrounding tiles, weights them, and returns the best one. Currently just evaluates distance between tile and player. x and y are the current location from which the best move is being computed.
+    #later I can alter it to give different values based on environment, using an AI dictionary
+    choices = get_adjacent_tiles(x,y)
+    best_choice = None
+    best_value = None
+    for tile in choices:
+        libtcod.console_set_char_background(defn.con, defn.player.x, defn.player.y, libtcod.green, libtcod.BKGND_SET )
+        libtcod.console_set_char_background(defn.con, tile.x, tile.y, libtcod.red, libtcod.BKGND_SET )
+        value = 100 / max(math.sqrt((tile.x-defn.player.x) ** 2 + (tile.y-defn.player.y) ** 2),1)#max(distance(tile.x,tile.y,defn.player.x,defn.player.y),1)
+        print value
+        if (value > best_value) or (best_choice == None):
+            best_value = value
+            best_choice = tile
+    print best_choice
+    return best_choice
+
+def distance (x1,y1,x2,y2):
+    return math.sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
+
+def get_adjacent_tiles(x,y):
+    #returns a list of non-blocked adjacent tiles, including current tile.
+    adjacent_tiles = []
+
+    #not sure why numbering is so weird here You have to shift X left to eliminate the skew, and then shift the whole thing right.
+    for y in [y-1, y, y+1]:
+        for x in [x-2, x-1, x]:
+            try:
+                if not defn.dungeon[x+1][y].blocked:
+                    adjacent_tiles.append(defn.dungeon[x+1][y])
+            except:
+                pass
+
+    return adjacent_tiles
+    
 class ConfusedMonster:
     #AI for a temporarily confused monster (reverts to previous after a while).
     def __init__(self, old_ai, num_turns=defn.CONFUSE_NUM_TURNS):
@@ -192,7 +278,8 @@ class Item:
             equipment = self.owner.equipment
             if equipment and invfn.get_equipped_in_slot(equipment.slot) is None:
                 equipment.equip()
-    def use(self):
+    def use(self, name):
+        #note: name is just so that certain use functions can be generalized. Not necessary for all purposes.
         #special case: if the object has the Equipment component, the "use" action is to equip/dequip
         if self.owner.equipment:
             self.owner.equipment.toggle_equip()
@@ -201,15 +288,8 @@ class Item:
         if self.use_function is None:
             gui.message('The ' + self.owner.name + ' cannot be used.')
         else:
-            if self.use_function() != 'cancelled':
+            if self.use_function(name) != 'cancelled':
                 defn.inventory.remove(self.owner)  #destroy after use, unless it was cancelled for some reason
-
-    def info(self):
-        #just call the "use_function" if it is defined
-        try:
-            gui.message(descr.self.object.name)
-        except:
-            gui.message('Sorry - I have\'nt got around to describing this yet.')
 
     def drop(self):
         #add to the map and remove from the player's inventory. also, place it at the player's coordinates
@@ -224,12 +304,9 @@ class Item:
 
 class Equipment:
     #an object that can be equipped, yielding bonuses. automatically adds the Item component.
-    def __init__(self, slot, power_bonus=0, armor_bonus=0, max_hp_bonus=0, max_mana_bonus=0):
-        self.power_bonus = power_bonus
-        self.armor_bonus = armor_bonus
-        self.max_hp_bonus = max_hp_bonus
-        self.max_mana_bonus = max_mana_bonus
+    def __init__(self, slot, trait_bonus=[], attacks=[]):
         self.slot = slot
+        self.trait_bonus = trait_bonus
         self.is_equipped = False
  
     def toggle_equip(self):  #toggle equip/dequip status
@@ -251,7 +328,7 @@ class Equipment:
         #dequip object and show a message about it
         if not self.is_equipped: return
         self.is_equipped = False
-        gui.message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
+        gui.message('Removed ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
 
 #####Note: I need to eventually move these or integrate them into the creature function
 
@@ -267,7 +344,7 @@ def player_death(player):
 def monster_death(monster):
     #transform it into a nasty corpse! it doesn't block, can't be
     #attacked and doesn't move
-    gui.message('The ' + monster.name + ' collapses in defeat! You gain ' + str(monster.creature.xp) + ' experience points.', libtcod.orange)
+    gui.message('The ' + monster.name + ' gurgles as its life-blood spills upon the sands!', libtcod.orange)
     monster.char = '%'
     monster.color = libtcod.dark_red
     monster.blocks = False

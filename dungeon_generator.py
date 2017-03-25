@@ -6,149 +6,56 @@ import map_classes as mpcl
 import random_generator_functions as rng
 import spell_functions as spfn
 import gui
-
-def place_objects(room):
-
-    #maximum number of monsters per room
-    max_room_monsters = mpfn.from_dungeon_level([[2, 1], [3, 4], [5, 6]])
- 
-    #chance of each monster
-    monster_chances = {}
-    monster_chances['bitterwood_fox'] = 80
-    monster_chances['iron_golem'] = mpfn.from_dungeon_level([[15, 3], [30, 5], [60, 7]])
- 
-    #maximum number of items per room
-    max_room_items = mpfn.from_dungeon_level([[2, 1], [3, 4]])
- 
-    #chance of each item (by default they have a chance of 0 at level 1, which then goes up)
-    item_chances = {}
-    item_chances['sword'] = 15
-    item_chances['leather boots'] = 25
-    item_chances['leather gloves'] = 25
-    item_chances['war gauntlets'] = mpfn.from_dungeon_level([[25, 2]]) 
-    item_chances['heal'] = 35  #healing potion always shows up, even if all other items have 0 chance
-    item_chances['lightning'] = mpfn.from_dungeon_level([[25, 4]])
-    item_chances['fireball'] =  mpfn.from_dungeon_level([[25, 6]])
-    item_chances['confuse'] =   mpfn.from_dungeon_level([[10, 2]])
-
-    #choose random number of monsters
-    num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
- 
-    for i in range(num_monsters):
-        #choose random spot for this monster
-        x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
-        y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
-         #only place it if the tile is not blocked
-        if not mpfn.is_blocked(x, y):
-            choice = rng.random_choice(monster_chances)
-            if choice == 'bitterwood_fox':
-                creature_component = obcl.Creature(hp=5, mana=0, armor=0, power=3, xp=35, death_function=obcl.monster_death)
-                ai_component = obcl.BasicMonster()
-                monster = obcl.Object(x, y, 'f', 'bitterwood fox', libtcod.amber,
-                    blocks=True, creature=creature_component, ai=ai_component)
-            elif choice == 'iron_golem':
-                creature_component = obcl.Creature(hp=13, mana=0, armor=5, power=5, xp=100, death_function=obcl.monster_death)
-                ai_component = obcl.BasicMonster()
-                monster = obcl.Object(x, y, 'G', 'iron golem', libtcod.silver,
-                    blocks=True, creature=creature_component, ai=ai_component)
-     
-        defn.objects.append(monster)
-
-    #choose random number of items
-    num_items = libtcod.random_get_int(0, 0, max_room_items)
- 
-    for i in range(num_items):
-        #choose random spot for this item
-        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
-        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
- 
-        #only place it if the tile is not blocked
-        if not mpfn.is_blocked(x, y):
-            choice = rng.random_choice(item_chances)
-            if choice == 'heal':
-                item_component = obcl.Item(use_function=spfn.cast_heal)
-                item = obcl.Object(x, y, '!', 'healing potion', libtcod.violet, item=item_component)
-                item.always_visible = True
-            elif choice == 'lightning':
-                item_component = obcl.Item(use_function=spfn.cast_lightning)
-                item = obcl.Object(x, y, '#', 'scroll of lightning bolt', libtcod.light_yellow, item=item_component)
-                item.always_visible = True
-            elif choice == 'fireball':
-                item_component = obcl.Item(use_function=spfn.cast_fireball) 
-                item = obcl.Object(x, y, '#', 'scroll of fireball', libtcod.light_yellow, item=item_component)
-                item.always_visible = True
-            elif choice == 'confuse':
-                item_component = obcl.Item(use_function=spfn.cast_confuse)
-                item = obcl.Object(x, y, '#', 'scroll of confusion', libtcod.light_yellow, item=item_component)
-                item.always_visible = True
-            elif choice == 'sword':
-                equipment_component = obcl.Equipment(slot='right hand', power_bonus=1)
-                item = obcl.Object(x, y, '/', 'sword', libtcod.sky, equipment=equipment_component)
-                item.always_visible = True
-            elif choice == 'leather boots':
-                equipment_component = obcl.Equipment(slot='feet', armor_bonus=1)
-                item = obcl.Object(x, y, '[', 'leather boots', libtcod.darker_orange, equipment=equipment_component)
-                item.always_visible = True
-            elif choice == 'leather gloves':
-                equipment_component = obcl.Equipment(slot='hands', armor_bonus=1)
-                item = obcl.Object(x, y, '[', 'leather gloves', libtcod.darker_orange, equipment=equipment_component)
-                item.always_visible = True
-            elif choice == 'war gauntlets':
-                equipment_component = obcl.Equipment(slot='hands', power_bonus=1)
-                item = obcl.Object(x, y, '[', 'war_gauntlets', libtcod.darker_orange, equipment=equipment_component)
-                item.always_visible = True
-
-            defn.objects.append(item)
-            item.send_to_back()
-
+import foo_dictionary as fdic
+            
 def make_map():
  
     #the list of objects with just the player
     defn.objects = [defn.player]
  
     #fill map with "blocked" tiles
-    defn.dungeon = [[ mpcl.Tile(True)
+    defn.dungeon = [[ mpcl.Tile(x,y,True)
         for y in range(defn.MAP_HEIGHT) ]
             for x in range(defn.MAP_WIDTH) ]
-
+            
     rooms = []
     num_rooms = 0
- 
+
+    #carve rooms out of the map
     for r in range(defn.MAX_ROOMS):
         #random width and height
         w = libtcod.random_get_int(0, defn.ROOM_MIN_SIZE, defn.ROOM_MAX_SIZE)
         h = libtcod.random_get_int(0, defn.ROOM_MIN_SIZE, defn.ROOM_MAX_SIZE)
-        #random position without going out of the boundaries of the map
+        #random position without going outside the map
         x = libtcod.random_get_int(0, 0, defn.MAP_WIDTH - w - 1)
         y = libtcod.random_get_int(0, 0, defn.MAP_HEIGHT - h - 1)
 
-        #"Rect" class makes rectangles easier to work with
+        #define new room as a rectangle
         new_room = mpcl.Rect(x, y, w, h)
  
-        #run through the other rooms and see if they intersect with this one
+        #check that none of the other rooms intersect with this one.
         failed = False
         for other_room in rooms:
             if new_room.intersect(other_room):
                 failed = True
                 break
-
+            
+        #if there are no intersections, then proceed.
         if not failed:
-            #this means there are no intersections, so this room is valid
- 
             #"paint" it to the map's tiles
             mpfn.create_room(new_room)
             
-            #add some contents to this room, such as monsters
+            #populate the room with objects
             place_objects(new_room)
 
-            #center coordinates of new room, will be useful later
+            #get center coordinates of new room
             (new_x, new_y) = new_room.center()
  
             if num_rooms == 0:
-                #this is the first room, where the player starts at
+                #this is the first room, where the player starts
                 defn.player.x = new_x
                 defn.player.y = new_y
-
+                defn.dungeon[defn.player.x][defn.player.y].scent += 100
             else:
                 #all rooms after the first:
                 #connect it to the previous room with a tunnel
@@ -174,12 +81,72 @@ def make_map():
     defn.objects.append(defn.stairs)
     defn.stairs.send_to_back()  #so it's drawn below the monsters
 
-def next_level():
-    #advance to the next level
-    gui.message('You take a moment to rest, and recover your strength.', libtcod.light_violet)
-    defn.player.creature.heal(defn.player.creature.max_hp / 2)  #heal the player by 50%
+#populate each new room with objects
+def place_objects(room):
+
+    #choose random number of monsters
+    max_room_monsters = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
+    num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
  
-    gui.message('After a rare moment of peace, you descend deeper into the heart of the dungeon...', libtcod.red)
+    for i in range(num_monsters):
+        #choose random spot for this monster
+        x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
+        y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
+        #only place it if the tile is not blocked
+        if not mpfn.is_blocked(x, y):
+            #choose a random monster from the dictionary
+            choice = rng.random_choice(fdic.mons_dict)
+            monster = fdic.create_monster(choice[0],x,y)
+            #add new monster to the game
+            defn.objects.append(monster)
+
+    max_room_equipment = mpfn.from_dungeon_level([[1, 1], [2, 4], [3, 6]])
+
+    #choose random number of equipment items
+    num_equipment = libtcod.random_get_int(0, 0, max_room_equipment)
+ 
+    for i in range(num_equipment):
+        #choose random spot for this item
+        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
+        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
+ 
+        #only place it if the tile is not blocked
+        if not mpfn.is_blocked(x, y):
+            choice = rng.random_choice(fdic.equip_dict)
+            equipment = fdic.create_equipment(choice[0],x,y)
+            equipment.always_visible = True
+
+            defn.objects.append(equipment)
+            equipment.send_to_back()
+
+    max_room_items = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
+
+    #choose random number of equipment items
+    num_items = libtcod.random_get_int(0, 0, max_room_equipment)
+ 
+    for i in range(num_items):
+        #choose random spot for this item
+        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
+        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
+ 
+        #only place it if the tile is not blocked
+        if not mpfn.is_blocked(x, y):
+            choice = rng.random_choice(fdic.item_dict)
+            item_component = obcl.Item(use_function=choice[4])
+            item = obcl.Object(x, y, choice[2], choice[0], choice[3], description=choice[5], item=item_component)
+            item.always_visible = True
+
+            defn.objects.append(item)
+            item.send_to_back()
+
+#advance to the next level
+def next_level():
+    gui.message('You pass through the magical gate with some apprehension. The gate\'s magic heals you.', libtcod.light_violet)
+    #heal the player by 50%
+    defn.player.creature.heal(defn.player.creature.max_hp / 2)
+    gui.message('You find yourself in an unfamiliar part of the dungeon.', libtcod.red)
+    #increment the dungeon level
     defn.dungeon_level += 1
-    make_map()  #create a fresh new level!
+    #generate a new map
+    make_map()
     mpfn.initialize_fov()

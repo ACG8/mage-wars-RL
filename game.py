@@ -12,7 +12,7 @@ import controls as ctrl
 import dungeon_generator as dgen
 import spell_functions as spfn
 import title_screen as tit
-
+            
 def render_all():
 
     if defn.fov_recompute:
@@ -88,6 +88,7 @@ def play_game():
 
         #upkeep phase
         check_level_up()
+        #propagate_sound()
  
         #erase all objects at their old locations, before they move
         for object in defn.objects:
@@ -112,7 +113,7 @@ def check_level_up():
         #it is! level up
         defn.player.level += 1
         defn.player.creature.xp -= level_up_xp
-        gui.message('Your battle skills grow stronger! You reached level ' + str(defn.player.level) + '!', libtcod.yellow)
+        gui.message('You reached level ' + str(defn.player.level) + '!', libtcod.yellow)
         choice = None
         while choice == None:  #keep asking until a choice is made
             choice = gui.menu('Level up! Choose a stat to raise:\n',
@@ -123,5 +124,6 @@ def check_level_up():
         if choice == 0:
             defn.player.creature.base_max_hp += 2
             defn.player.creature.hp += 2
+
         elif choice == 1:
-            defn.player.creature.base_mana += 2
+            defn.player.creature.base_max_mana += 2
