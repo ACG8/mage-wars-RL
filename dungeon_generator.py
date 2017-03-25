@@ -11,11 +11,12 @@ import monster_dictionary as mdic
 import item_dictionary as idic
 import equipment_dictionary as edic
 import dijkstra as djks
+import data_methods as data
             
 def make_map():
  
     #the list of objects with just the player
-    defn.objects = [defn.player]
+    #defn.objects = [defn.player]
  
     #fill map with "blocked" tiles
     defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.grey, True)
@@ -85,8 +86,9 @@ def make_map():
 
     #create stairs at the center of the last room
     defn.stairs = obcl.Object(new_x, new_y, '<', 'stairs', libtcod.white, always_visible=True)
-    defn.objects.append(defn.stairs)
-    defn.stairs.send_to_back()  #so it's drawn below the monsters
+    #defn.objects.append(defn.stairs)
+    defn.dungeon[defn.stairs.x][defn.stairs.y].objects.append(defn.stairs)
+    data.send_to_back(defn.stairs, defn.dungeon[defn.stairs.x][defn.stairs.y].objects)  #so it's drawn below the monsters
 
     #clear list of dungeon tiles
 
@@ -119,7 +121,7 @@ def place_objects(room):
             arg = rng.random_choice(mdic.mons_dict)
             monster = mdic.get_monster(arg['name'],x,y)
             #add new monster to the game
-            defn.objects.append(monster)
+            #defn.objects.append(monster)
             defn.dungeon[x][y].objects.append(monster)
 
     max_room_equipment = mpfn.from_dungeon_level([[1, 1], [2, 4], [3, 6]])
@@ -138,9 +140,10 @@ def place_objects(room):
             equipment = edic.get_equipment(arg['name'],x,y)
             equipment.always_visible = True
 
-            defn.objects.append(equipment)
-            equipment.send_to_back()
+            #defn.objects.append(equipment)
+            
             defn.dungeon[x][y].objects.append(equipment)
+            data.send_to_back(equipment, defn.dungeon[x][y].objects)
 
     max_room_items = mpfn.from_dungeon_level([[2, 1], [3, 4], [4, 6]])
 
@@ -158,9 +161,9 @@ def place_objects(room):
             item = idic.get_item(arg['name'],x,y)
             item.always_visible = True
 
-            defn.objects.append(item)
-            item.send_to_back()
+            #defn.objects.append(item)
             defn.dungeon[x][y].objects.append(item)
+            data.send_to_back(item, defn.dungeon[x][y].objects)
 
 #advance to the next level
 def next_level():

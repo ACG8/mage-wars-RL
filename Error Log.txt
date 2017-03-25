@@ -12,3 +12,5 @@ currently : add friendly creatures, improve ability to move around/through allie
 Major structural rewrite - we need a way to store every object in a tile so that they can be retrieved without iteration. This can be implemented in the move and creation functions. Basically, each tile has a set of objects. When you move, you are removed from the previous tile and added to the next. This is somewhat clumsy, but I don't think there should be any problems as long as this is consistent. Ideally, I want to reference this change as little as possible. I must be alert for bugs caused by something being in two tiles.
 
 Once this change is implemented, I can go through the code and replace iteration with simply checking the tile's list of objects. Should be much faster.
+
+Error with picking up items

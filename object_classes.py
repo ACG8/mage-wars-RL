@@ -46,6 +46,11 @@ class Object:
             self.item.owner = self
 
     @property
+    def location(self):
+        #gives the tile the object is on right now
+        return defn.dungeon[self.x][self.y]
+
+    @property
     def traits(self):
         bonus_traits = []
         bonus_sources = edic.get_all_equipped(self) #+enchantments + conditions, etc.
@@ -120,11 +125,6 @@ class Object:
         dx = other.x - self.x
         dy = other.y - self.y
         return math.sqrt(dx ** 2 + dy ** 2)
-    
-    def send_to_back(self):
-        #make this object be drawn first, so all others appear above it if they're in the same tile.
-        defn.objects.remove(self)
-        defn.objects.insert(0, self)
 
     def distance(self, x, y):
         #return the distance to some coordinates
@@ -343,7 +343,7 @@ class Item:
             gui.message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
         else:
             defn.inventory.append(self.owner)
-            defn.objects.remove(self.owner)
+            self.owner.location.objects.remove(self.owner)
             gui.message('You picked up a ' + self.owner.name + '!', libtcod.green)
             #special case: automatically equip, if the corresponding equipment slot is unused
             equipment = self.owner.equipment
@@ -365,7 +365,7 @@ class Item:
 
     def drop(self):
         #add to the map and remove from the player's inventory. also, place it at the player's coordinates
-        defn.objects.append(self.owner)
+        self.owner.location.objects.append(self.owner)
         defn.inventory.remove(self.owner)
         self.owner.x = defn.player.x
         self.owner.y = defn.player.y
@@ -425,6 +425,6 @@ def monster_death(monster):
     monster.creature = None
     monster.ai = None
     monster.name = 'remains of ' + monster.name
-    monster.send_to_back()
+    data.send_to_back(monster,defn.dungeon[monster.x][monster.y].objects)
 
 

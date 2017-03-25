@@ -11,3 +11,8 @@ def sum_values_from_list(target_list, desired_element):
 
 def distance (x1,y1,x2,y2):
     return math.sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
+
+def send_to_back(element,listset):
+    #send this object to the beginning of its list
+    listset.remove(element)
+    listset.insert(0, element)

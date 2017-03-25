@@ -46,6 +46,7 @@ def spellbook_menu(header):
     return defn.spellbook[index]
 
 def handle_keys():
+    current_tile = defn.dungeon[defn.player.x][defn.player.y]
     #global keys
  
     if defn.key.vk == libtcod.KEY_ENTER and defn.key.lalt:
@@ -90,9 +91,9 @@ def handle_keys():
  
             if key_char == ',':
                 #pick up an item
-                for object in defn.objects:  #look for an item in the player's tile
-                    if object.x == defn.player.x and object.y == defn.player.y and object.item:
-                        object.item.pick_up()
+                for obj in current_tile.objects:  #look for an item in the player's tile
+                    if obj.x == defn.player.x and obj.y == defn.player.y and obj.item:
+                        obj.item.pick_up()
                         return
 
             if key_char == 'i':

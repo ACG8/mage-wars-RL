@@ -16,9 +16,13 @@ import dijkstra as djks
 
 def render_objects():
     
-    for obj in defn.objects:
-        if obj != defn.player and (obj.always_visible or libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y)) :
-            obj.draw()
+    for y in range(defn.MAP_HEIGHT):
+        for x in range(defn.MAP_WIDTH):
+            if defn.dungeon[x][y].objects:
+                for obj in defn.dungeon[x][y].objects:
+                    if obj != defn.player and (obj.always_visible or libtcod.map_is_in_fov(defn.fov_map, obj.x, obj.y)) :
+                        obj.draw()
+
     #player is always rendered last
     defn.player.draw()
 
@@ -44,11 +48,12 @@ def render_all():
                     libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                     #it's visible
                     defn.dungeon[x][y].explored = True
-    
+                #now we render the objects on that tile:
+
     #compute FOV dijkstra map
     defn.dijkstra_fov_map = djks.Map(defn.visible_tiles)
     defn.dijkstra_fov_map.compute_map()
-    
+                            
     render_objects()
 
     libtcod.console_blit(defn.con, 0, 0, defn.MAP_WIDTH, defn.MAP_HEIGHT, 0, 0, 0)
