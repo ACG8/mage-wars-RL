@@ -131,7 +131,7 @@ def new_game():
  
     defn.game_state = 'playing'
     defn.player_location_changed = True
-    defn.autoexploring = False
+    defn.autoplaying = None
     gui.message ('Press *?* for a list of commands', libtcod.white)
     game.render_all()
 

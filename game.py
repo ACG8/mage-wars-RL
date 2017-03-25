@@ -44,8 +44,6 @@ def render_all():
                     libtcod.console_set_char_background(defn.con, x, y, defn.dungeon[x][y].color, libtcod.BKGND_SET)
                     #it's visible
                     defn.dungeon[x][y].explored = True
-                    if defn.dungeon[x][y] in defn.unexplored_tiles:
-                        defn.unexplored_tiles.remove(defn.dungeon[x][y])
     
     #compute FOV dijkstra map
         #visible tiles is wrong - the list is of invisible tiles

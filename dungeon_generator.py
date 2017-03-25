@@ -21,14 +21,6 @@ def make_map():
     defn.dungeon = [[ mpcl.Tile(x,y,'wall',libtcod.grey, True)
         for y in range(defn.MAP_HEIGHT) ]
             for x in range(defn.MAP_WIDTH) ]
-
-    #clear unexplored list
-    defn.unexplored_tiles = []
-
-    #set unexplored list to list of tiles
-    for y in range(defn.MAP_HEIGHT):
-        for x in range(defn.MAP_WIDTH):
-            defn.unexplored_tiles.append(defn.dungeon[x][y])
     
     rooms = []
     num_rooms = 0
@@ -100,6 +92,7 @@ def make_map():
             'color' : libtcod.white,
             'description' : 'portal to the next level'})
     defn.objects.append(defn.stairs)
+    defn.dungeon[defn.stairs.x][defn.stairs.y].objects.append(defn.stairs)
     defn.stairs.send_to_back()  #so it's drawn below the monsters
 
     #clear list of dungeon tiles

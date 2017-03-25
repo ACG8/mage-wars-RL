@@ -86,6 +86,6 @@ key = libtcod.Key()
 fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
 fov_recompute = True
 dungeon_level = 1
-global player, training, antitraining, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon, dungeon_unblocked_list, player_location_changed, autoexploring
+global player, training, antitraining, stairs, game_state, game_msgs, inventory, spellbook, objects, dungeon, dungeon_unblocked_list, player_location_changed, autoplaying
 #define dijkstra maps
-global dijkstra_player_map, dijkstra_monster_map, dijkstra_fov_map, dijkstra_fog_map, unexplored_tiles, visible_tiles
+global dijkstra_player_map, dijkstra_monster_map, dijkstra_fov_map, dijkstra_fog_map, dijkstra_item_map, visible_tiles

@@ -25,21 +25,53 @@ class Map:
             self.array[goal.x][goal.y] = 0
 
         done = False
+
+        #new algorithm that goes in each direction - it works! Lightning-ish fast.
         
-        while not done:
+        while True:
             change = False
-            for tile in defn.dungeon_unblocked_list:
-                minimum_neighbor = self.lowest_neighbor_value(tile.x,tile.y)
-                if self.array[tile.x][tile.y] > minimum_neighbor + 1:
-                    self.array[tile.x][tile.y] = minimum_neighbor + 1
-                    change = True
-            for tile in reversed(defn.dungeon_unblocked_list):
-                minimum_neighbor = self.lowest_neighbor_value(tile.x,tile.y)
-                if self.array[tile.x][tile.y] > minimum_neighbor + 1:
-                    self.array[tile.x][tile.y] = minimum_neighbor + 1
-                    change = True
-            if change == False:
-                done = True
+            for y in range(defn.MAP_HEIGHT):
+                for x in range(defn.MAP_WIDTH):
+                    if not defn.dungeon[x][y].blocked:
+                        minimum_neighbor = self.lowest_neighbor_value(x,y)
+                        if self.array[x][y] > minimum_neighbor + 1:
+                            self.array[x][y] = minimum_neighbor + 1
+                            change = True
+            if not change:
+                break
+
+            change = False
+            for x in reversed(range(defn.MAP_WIDTH)):
+                for y in reversed(range(defn.MAP_HEIGHT)):
+                    if not defn.dungeon[x][y].blocked:
+                        minimum_neighbor = self.lowest_neighbor_value(x,y)
+                        if self.array[x][y] > minimum_neighbor + 1:
+                            self.array[x][y] = minimum_neighbor + 1
+                            change = True
+            if not change:
+                break
+
+            change = False
+            for y in reversed(range(defn.MAP_HEIGHT)):
+                for x in reversed(range(defn.MAP_WIDTH)):
+                    if not defn.dungeon[x][y].blocked:
+                        minimum_neighbor = self.lowest_neighbor_value(x,y)
+                        if self.array[x][y] > minimum_neighbor + 1:
+                            self.array[x][y] = minimum_neighbor + 1
+                            change = True
+            if not change:
+                break
+
+            change = False
+            for x in range(defn.MAP_WIDTH):
+                for y in range(defn.MAP_HEIGHT):
+                    if not defn.dungeon[x][y].blocked:
+                        minimum_neighbor = self.lowest_neighbor_value(x,y)
+                        if self.array[x][y] > minimum_neighbor + 1:
+                            self.array[x][y] = minimum_neighbor + 1
+                            change = True
+            if not change:
+                break
 
     def lowest_neighbor_value(self,x,y):
         neighbors = []
